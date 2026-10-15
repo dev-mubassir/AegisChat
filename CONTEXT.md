@@ -10,21 +10,16 @@
 - S: `cd server && python -m pytest -q`
 - Ruff: `python -m ruff check server`
 - A: `cd app && C:\src\flutter\bin\flutter.bat analyze && C:\src\flutter\bin\flutter.bat test`
-- CLI Invite: `python server/manage.py create-invite`
+- Crypto tests: `cd app && C:\src\flutter\bin\flutter.bat test test/crypto`
 
 ## Decisions
-- TOTP enrolment using pyotp with 10 single-use recovery codes hashed with Argon2id.
-- New-device approval: old device verifies TOTP and signs new device public keys.
-- Unknown devices and wrong TOTP/recovery codes are rejected.
+- AES-256-GCM implemented via `package:cryptography` with 96-bit random nonces.
+- Flip-any-bit tamper tests and 10,000 nonces uniqueness verified.
+- EncryptedPayload serialization format: 12-byte nonce + 16-byte MAC + ciphertext.
 
 ## What Is Next
-- T08: App crypto - AES-256-GCM (app/lib/crypto/aes_gcm.dart, 96-bit nonce, associated data, 10k nonce uniqueness).
+- T09: RSA-OAEP and signatures (RSA-2048 keygen in isolate, OAEP-SHA256 32-byte key wrapping, Ed25519 signing).
 
 ## Attempt Log
-- T01: PASS. Server skeleton and pytest/ruff config.
-- T02: PASS. Flutter skeleton with pinned dependencies.
-- T03: PASS. SQLite tables, create-invite, POST /register.
-- T04: PASS. Challenge login, signature verify, token rotation, rate limits.
-- T05: PASS. Key directory, WebSocket relay, delete-on-ack, offline delivery, 30-day purge.
-- T06: PASS. Server privacy: log redaction, security headers, closed CORS, 1MB size limit.
-- T07: PASS. TOTP enrolment, Argon2id recovery codes, new-device approval flow.
+- T01..T07: PASS (Server skeleton, Flutter skeleton, DB, Auth, Relay, Privacy, TOTP/Approval).
+- T08: PASS. AES-256-GCM encryption/decryption, KAT vectors, bit tampering, 10k nonce uniqueness.

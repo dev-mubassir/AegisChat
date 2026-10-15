@@ -45,9 +45,10 @@
 
 ## App crypto
 
-- [ ] T08 AES-256-GCM
+- [x] T08 AES-256-GCM
   Do: `app/lib/crypto/aes_gcm.dart`: encrypt and decrypt with a random 96-bit nonce and associated data.
   Check: `cd app && flutter test test/crypto` passes, with known-answer vectors, a flip-any-bit tamper test, wrong key or associated data fails, and 10,000 nonces all unique.
+  Evidence: `cd app && flutter test test/crypto` passed (6 passed: roundtrip, KAT vectors, flip-any-bit tamper, wrong key/aad rejection, 10,000 nonces all unique).
 - [ ] T09 RSA-OAEP and signatures
   Do: RSA-2048 key generation (run it in a background isolate: pure-Dart RSA key generation can take many seconds), OAEP-SHA256 wrap and unwrap of a 32-byte key, Ed25519 (or RSA-PSS) sign and verify.
   Check: `cd app && flutter test test/crypto` passes, with tests for round trip, wrong key, two wraps of one key differ, and tampered signature.
