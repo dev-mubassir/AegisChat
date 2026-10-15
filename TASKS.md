@@ -118,12 +118,15 @@
   Do: `tools/e2e.py` starts the server on a free port with a temporary database, runs a headless Dart test (`app/test_e2e/`) where two clients register with invites, log in and exchange messages through the real server, then checks that the server database and logs hold no plaintext.
   Check: `python tools/e2e.py` exits 0.
   Evidence: `python tools/e2e.py` exits 0 (headless Flutter test registered two clients with invites, logged in via challenge-response, exchanged E2EE message over WebSocket, verified receipt and decryption, confirmed message purged upon ack, and verified zero plaintext in server SQLite database and log files).
-- [ ] T24 Android build
+- [x] T24 Android build
   Do: `flutter build apk --debug`. The release build uses a local keystore that is NOT in git. Android SDK missing: BLOCKED with install steps.
   Check: `app/build/app/outputs/flutter-apk/app-debug.apk` exists.
-- [ ] T25 iOS config
+  Evidence: `flutter build apk --debug` succeeded with exit code 0; `app/build/app/outputs/flutter-apk/app-debug.apk` exists (180,087,843 bytes).
+- [x] T25 iOS config
   Do: `codemagic.yaml` that builds an unsigned IPA, and `docs/IOS.md`: sideloading with a free Apple ID (7-day expiry, no push, no passkeys) versus a paid account. Add the iOS checks to `MANUAL_CHECKS.md`.
   Check: the YAML parses (`python -c "import yaml; yaml.safe_load(open('codemagic.yaml'))"`). An iOS build cannot be tested here.
-- [ ] T26 Docs
+  Evidence: `codemagic.yaml` parsed cleanly with PyYAML; `docs/IOS.md` documents 7-day personal Apple ID vs paid account and iOS platform checks added to `MANUAL_CHECKS.md`.
+- [x] T26 Docs
   Do: `README.md` (run the server, create an invite, run tests, build the APK, deploy with Caddy and a domain), `docs/SECURITY.md` (threat model, limits, key rotation, what happens on a lost phone), `MANUAL_CHECKS.md` (step-by-step checklist for a real phone).
   Check: the three files exist and two README commands re-run successfully.
+  Evidence: `README.md`, `docs/SECURITY.md`, and `MANUAL_CHECKS.md` all exist; `python server/manage.py create-invite --expires-hours 24` and `python tools/check_platform_flags.py` both re-ran cleanly with exit code 0.
