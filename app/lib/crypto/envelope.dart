@@ -148,6 +148,8 @@ class MessageEnvelope {
     required Uint8List senderSigningPublicKey,
     required RSAPrivateKey recipientRsaPrivateKey,
     required ReplayGuard replayGuard,
+    int? currentTimestamp,
+    int maxClockSkew = maxClockSkewSeconds,
   }) async {
     if (envelopeBytes.length < 1 + 1 + 1 + 1 + 8 + 256 + 12 + 16 + 4 + 64) {
       throw EnvelopeAuthenticationException('Envelope too short to be valid');
@@ -184,8 +186,8 @@ class MessageEnvelope {
     }
 
     // 2. Clock skew check
-    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    if ((timestamp - now).abs() > maxClockSkewSeconds) {
+    final now = currentTimestamp ?? (DateTime.now().millisecondsSinceEpoch ~/ 1000);
+    if ((timestamp - now).abs() > maxClockSkew) {
       throw ClockSkewException(
         'Timestamp outside allowed clock skew ($timestamp vs $now, diff: ${(timestamp - now).abs()}s)',
       );

@@ -12,13 +12,16 @@
 - A: `cd app && C:\src\flutter\bin\flutter.bat analyze && C:\src\flutter\bin\flutter.bat test`
 - Crypto tests: `cd app && C:\src\flutter\bin\flutter.bat test test/crypto`
 
+- XCheck: `python tools/xcheck.py`
+
 ## Decisions
 - Protocol v1 envelope: 0x01 version, sender/recipient/msg ID, timestamp, RSA-2048 OAEP wrapped AES key, AES-256-GCM ciphertext + MAC, Ed25519 signature.
 - Strict checks: recipient verification, 300s clock skew window, replay guard cache, signature verification.
 - Documented in `docs/PROTOCOL.md`.
+- Verified bidirectional compatibility between Dart PointyCastle/cryptography and Python cryptography.
 
 ## What Is Next
-- T12: Cross-language crypto check (ref_envelope.py, vectors.json, xcheck.py bidirectional verification).
+- T13: Device key and login (DeviceKey interface, HardwareDeviceKey, SoftwareDeviceKey, challenge login, refresh rotation).
 
 ## Attempt Log
 - T01..T07: PASS (Server skeleton, Flutter skeleton, DB, Auth, Relay, Privacy, TOTP/Approval).
@@ -26,3 +29,4 @@
 - T09: PASS. RSA-2048 OAEP key wrap/unwrap, Ed25519 sign & verify.
 - T10: PASS. Message envelope seal() and open(), replay guard, clock skew, protocol spec.
 - T11: PASS. KeyStore abstraction & in-memory fake, 60-digit symmetric safety number, QR verification payload.
+- T12: PASS. Bidirectional cross-language crypto checks (Dart <-> Python reference implementation).

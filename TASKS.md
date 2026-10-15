@@ -61,9 +61,10 @@
   Do: `KeyStore` interface over `flutter_secure_storage` (plus an in-memory fake for tests). Keys are never written anywhere else. A 60-digit safety number and a QR payload from two public keys, identical on both phones.
   Check: A passes.
   Evidence: `flutter analyze` clean (0 issues) and `flutter test` passed (24 tests passed across crypto and smoke suite).
-- [ ] T12 Cross-language crypto check (the most important crypto test)
+- [x] T12 Cross-language crypto check (the most important crypto test)
   Do: write an independent Python version of `docs/PROTOCOL.md` in `tools/ref_envelope.py` using the `cryptography` package. Dart writes test vectors to `docs/vectors.json`. Python must open every one, and envelopes made by Python must open in Dart. `tools/xcheck.py` runs both directions.
   Check: `python tools/xcheck.py` exits 0.
+  Evidence: `python tools/xcheck.py` exited 0 (Direction 1: Dart -> Python opened 3 vectors, Direction 2: Python -> Dart opened 3 vectors including 2.4KB large payload and emojis).
 
 ## App login
 
