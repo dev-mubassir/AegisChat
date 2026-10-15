@@ -1,7 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:app/contacts/contact_manager.dart';
+import 'package:app/ui/qr_scan_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 /// Screen displaying the contact list with verification status, key change warnings, and safety numbers.
 class ContactsScreen extends StatefulWidget {
@@ -55,28 +57,43 @@ class _ContactsScreenState extends State<ContactsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('My Contact Card'),
+        title: Text('My QR Code (@${widget.myUserId})'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Share this JSON card with contacts so they can add you:'),
-              const SizedBox(height: 12),
-              SelectableText(
-                jsonStr,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black12, blurRadius: 8, spreadRadius: 2),
+                  ],
+                ),
+                child: QrImageView(
+                  data: jsonStr,
+                  version: QrVersions.auto,
+                  size: 220.0,
+                  backgroundColor: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                'Let other users scan this QR code with their camera to add you instantly.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: Colors.grey),
               ),
             ],
           ),
         ),
         actions: [
           ElevatedButton.icon(
-            icon: const Icon(Icons.copy),
-            label: const Text('Copy JSON'),
+            icon: const Icon(Icons.copy, size: 18),
+            label: const Text('Copy Card Code'),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Contact card JSON copied!')),
+                const SnackBar(content: Text('Contact card code copied!')),
               );
               Navigator.of(ctx).pop();
             },
@@ -90,19 +107,88 @@ class _ContactsScreenState extends State<ContactsScreen> {
     );
   }
 
+  Future<void> _scanQrCode() async {
+    final scannedCode = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const QrScanScreen()),
+    );
+    if (scannedCode != null && scannedCode.trim().isNotEmpty) {
+      await _processContactPayload(scannedCode.trim());
+    }
+  }
+
+  Future<void> _processContactPayload(String rawCode) async {
+    try {
+      final payload = ContactQrPayload.fromJsonString(rawCode.trim());
+      final contact = await widget.contactManager.addOrUpdateFromQr(payload);
+      if (mounted) {
+        setState(() {});
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Added contact: ${contact.displayName} (@${contact.userId})'),
+            backgroundColor: Colors.green.shade700,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Invalid contact QR code: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    }
+  }
+
   void _showAddContactDialog() {
     _qrInputController.clear();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Add Contact via QR'),
-        content: TextField(
-          key: const Key('add_contact_input'),
-          controller: _qrInputController,
-          maxLines: 4,
-          decoration: const InputDecoration(
-            hintText: 'Paste scanned contact card JSON',
-            border: OutlineInputBorder(),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ElevatedButton.icon(
+                key: const Key('scan_camera_dialog_button'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
+                ),
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text('Scan with Camera', style: TextStyle(fontWeight: FontWeight.bold)),
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  _scanQrCode();
+                },
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Row(
+                  children: [
+                    Expanded(child: Divider()),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Text('OR PASTE CODE', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    ),
+                    Expanded(child: Divider()),
+                  ],
+                ),
+              ),
+              TextField(
+                key: const Key('add_contact_input'),
+                controller: _qrInputController,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  hintText: 'Paste scanned contact card JSON',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
           ),
         ),
         actions: [
@@ -113,21 +199,10 @@ class _ContactsScreenState extends State<ContactsScreen> {
           ElevatedButton(
             key: const Key('submit_add_contact'),
             onPressed: () async {
-              try {
-                final payload = ContactQrPayload.fromJsonString(_qrInputController.text.trim());
-                await widget.contactManager.addOrUpdateFromQr(payload);
-                if (mounted) {
-                  setState(() {});
-                }
-                if (ctx.mounted) {
-                  Navigator.of(ctx).pop();
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Invalid contact QR: $e')),
-                  );
-                }
+              final text = _qrInputController.text.trim();
+              Navigator.of(ctx).pop();
+              if (text.isNotEmpty) {
+                await _processContactPayload(text);
               }
             },
             child: const Text('Add Contact'),
@@ -252,11 +327,17 @@ class _ContactsScreenState extends State<ContactsScreen> {
       appBar: AppBar(
         title: const Text('Contacts'),
         actions: [
+          IconButton(
+            key: const Key('scan_contact_qr_button'),
+            icon: const Icon(Icons.qr_code_scanner),
+            tooltip: 'Scan Contact QR',
+            onPressed: _scanQrCode,
+          ),
           if (widget.myUserId != null && widget.myEncryptionPub != null)
             IconButton(
               key: const Key('my_contact_card_button'),
-              icon: const Icon(Icons.badge_outlined),
-              tooltip: 'My Contact Card',
+              icon: const Icon(Icons.qr_code_2),
+              tooltip: 'My QR Code',
               onPressed: _showMyContactCardDialog,
             ),
           IconButton(
