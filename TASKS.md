@@ -26,9 +26,10 @@
   Do: SQLite tables for users, devices (public keys), invites (one-time, expiring), messages (ciphertext bytes, sender, recipient, created, delivered) and refresh tokens. `server/manage.py create-invite`. `POST /register` takes an invite and the phone's public keys.
   Check: S passes, with tests for a valid, reused, expired and invalid invite.
   Evidence: `cd server && python -m pytest -q` passed (6 passed in 1.23s: valid, reused, expired, invalid invites and CLI create-invite).
-- [ ] T04 Challenge login and tokens
+- [x] T04 Challenge login and tokens
   Do: `POST /auth/challenge` (random one-time nonce, 60 s) and `POST /auth/verify` (ECDSA P-256 signature over the nonce) return a 10-minute access token and a rotating refresh token. Reusing an old refresh token revokes that token family. Rate limits on `/register` and `/auth/*` (per IP and per device).
   Check: S passes, with tests for replayed nonce, expired nonce, bad signature, refresh reuse and rate limit.
+  Evidence: `cd server && python -m pytest -q` passed (12 passed in 2.17s: challenge, verify, replayed nonce, expired nonce, bad signature, refresh reuse family revocation, rate limits).
 - [ ] T05 Key directory and message relay
   Do: `GET /keys/{user_id}` (login required). WebSocket `/ws` (token auth): receive, store ciphertext, deliver if the receiver is online, wait for the ack, then delete the row. Purge undelivered messages after 30 days. Size limit and ordering.
   Check: S passes, with tests for offline delivery, delete-on-ack, unauthorised and oversize messages.

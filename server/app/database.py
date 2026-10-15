@@ -70,6 +70,14 @@ def init_db(db_path: str | None = None) -> None:
                 created_at INTEGER NOT NULL
             );
 
+            CREATE TABLE IF NOT EXISTS auth_challenges (
+                nonce TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                device_id TEXT NOT NULL,
+                expires_at INTEGER NOT NULL,
+                used INTEGER NOT NULL DEFAULT 0
+            );
+
             CREATE INDEX IF NOT EXISTS idx_devices_user ON devices(user_id);
             CREATE INDEX IF NOT EXISTS idx_messages_recipient ON messages(recipient_id, delivered);
             CREATE INDEX IF NOT EXISTS idx_refresh_token_hash ON refresh_tokens(token_hash);
