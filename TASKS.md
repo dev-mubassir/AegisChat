@@ -103,9 +103,10 @@
   Do: Android `allowBackup=false`, cleartext off with a network security config, `FLAG_SECURE` on the main activity, generic notification text. iOS: exclude from backup and blur in the app switcher (compile-checked only). `tools/check_platform_flags.py` fails when a flag is missing.
   Check: `python tools/check_platform_flags.py` exits 0.
   Evidence: `python tools/check_platform_flags.py` exits 0 with all 6 platform flags verified (allowBackup=false, cleartext off, FLAG_SECURE, iOS backup exclusion, app switcher UIBlurEffect, generic notification text) and passing self-tests.
-- [ ] T21 Certificate pinning
+- [x] T21 Certificate pinning
   Do: pin the SHA-256 of the server public key plus one backup pin, set in one config file. Unit-test the matching function (good pin, wrong pin, backup pin). Explain how to rotate pins in `docs/SECURITY.md`.
   Check: A passes.
+  Evidence: `flutter analyze` clean (0 issues) and `flutter test` passed (65 tests passed: CertificatePinner primary pin, backup pin, wrong pin rejection, X509Certificate DER hashing, pin rotation documentation in docs/SECURITY.md).
 
 ## Checks and build
 
