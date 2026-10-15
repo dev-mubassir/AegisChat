@@ -91,9 +91,10 @@
   Do: add a contact by scanning a QR (user id + public keys + invite), show the safety number, a "verified" flag, and a warning when a contact's key changes.
   Check: A passes.
   Evidence: `flutter analyze` clean (0 issues) and `flutter test` passed (52 tests passed: ContactManager QR contact cards, 60-digit symmetric safety numbers, verified toggle, MITM key-change detection & alert UI).
-- [ ] T18 Chat service
+- [x] T18 Chat service
   Do: WebSocket client with reconnect and backoff. Send = seal, then relay. Receive = verify, open, store, ack. Offline queue. States: sending, sent, delivered.
   Check: A passes (tests use a fake WebSocket server).
+  Evidence: `flutter analyze` clean (0 issues) and `flutter test` passed (55 tests passed: ChatService WebSocket client, exponential backoff, send/seal, receive/verify/open/ack, offline queue flushing, states sending/sent/delivered).
 - [ ] T19 Chat UI
   Do: contact list, chat screen, registration (invite) screen, lock screen, safety-number screen. Simple Material 3.
   Check: A passes, with widget tests: a sent message appears, a received message is decrypted, a locked app shows the lock screen.

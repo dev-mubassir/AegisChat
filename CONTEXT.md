@@ -25,7 +25,7 @@
 - Contacts & Verification: ContactManager with QR contact cards, 60-digit symmetric safety numbers, verified badges, and automatic key change detection/warnings.
 
 ## What Is Next
-- T18: Chat service (WebSocket client, reconnect & exponential backoff, send=seal, receive=verify/open/store/ack, offline queue).
+- T19: Chat UI (contact list, chat screen, registration/invite screen, lock screen, safety-number screen, Material 3, widget tests).
 
 ## Attempt Log
 - T01..T07: PASS (Server skeleton, Flutter skeleton, DB, Auth, Relay, Privacy, TOTP/Approval).
@@ -35,3 +35,4 @@
 - T15: PASS. TOTP enrolment, recovery codes, new-device approval QR and widget tests.
 - T16: PASS. EncryptedMessageStore with per-record AES-256-GCM, zero plaintext on disk, wrong key rejection.
 - T17: PASS. ContactManager, safety numbers, verified flag, key change alert UI and tests.
+- T18: PASS. ChatService WebSocket client, reconnect/backoff, send/seal, receive/open/ack, offline queue.
