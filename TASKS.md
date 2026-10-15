@@ -57,9 +57,10 @@
   Do: `seal()` and `open()` combine T08 and T09. Versioned format written in `docs/PROTOCOL.md`. Associated data = sender id + recipient id + message id + timestamp. Replay guard by message id. Reject a wrong recipient and timestamps outside the allowed clock skew.
   Check: same command, with tests for round trip, tampering with any field, replay and wrong recipient.
   Evidence: `cd app && flutter test test/crypto` passed (18 passed: round trip, tampering with any field, replay, wrong recipient, clock skew) and `flutter analyze` clean.
-- [ ] T11 Key storage and safety numbers
+- [x] T11 Key storage and safety numbers
   Do: `KeyStore` interface over `flutter_secure_storage` (plus an in-memory fake for tests). Keys are never written anywhere else. A 60-digit safety number and a QR payload from two public keys, identical on both phones.
   Check: A passes.
+  Evidence: `flutter analyze` clean (0 issues) and `flutter test` passed (24 tests passed across crypto and smoke suite).
 - [ ] T12 Cross-language crypto check (the most important crypto test)
   Do: write an independent Python version of `docs/PROTOCOL.md` in `tools/ref_envelope.py` using the `cryptography` package. Dart writes test vectors to `docs/vectors.json`. Python must open every one, and envelopes made by Python must open in Dart. `tools/xcheck.py` runs both directions.
   Check: `python tools/xcheck.py` exits 0.

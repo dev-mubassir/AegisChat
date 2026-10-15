@@ -18,10 +18,11 @@
 - Documented in `docs/PROTOCOL.md`.
 
 ## What Is Next
-- T11: Key storage and safety numbers (KeyStore interface, in-memory fake, 60-digit safety number, QR payload).
+- T12: Cross-language crypto check (ref_envelope.py, vectors.json, xcheck.py bidirectional verification).
 
 ## Attempt Log
 - T01..T07: PASS (Server skeleton, Flutter skeleton, DB, Auth, Relay, Privacy, TOTP/Approval).
 - T08: PASS. AES-256-GCM authenticated encryption.
 - T09: PASS. RSA-2048 OAEP key wrap/unwrap, Ed25519 sign & verify.
 - T10: PASS. Message envelope seal() and open(), replay guard, clock skew, protocol spec.
+- T11: PASS. KeyStore abstraction & in-memory fake, 60-digit symmetric safety number, QR verification payload.
