@@ -1,43 +1,30 @@
 # SecureChat Context & Handoff
 
 ## Environment & Tool Versions
-- OS: Windows (win32, x64)
-- Python: 3.14.7 | Git: 2.55.0.windows.3
-- Flutter: 3.47.7 (channel stable) | Dart: 3.13.5
-- Pytest: 9.1.1 | Ruff: 0.17.0 | FastAPI: 0.143.1 | Cryptography: 50.0.2
+- OS: Windows 11 (win32, x64) | Python: 3.14.7 | Git: 2.55.0.windows.3
+- Flutter: 3.47.7 | Dart: 3.13.5 | Java: OpenJDK 17 | Android SDK: 36
+- Pytest: 9.1.1 | FastAPI: 0.143.1 | Cryptography: 50.0.2
 
 ## Commands That Work
-- S: `cd server && python -m pytest -q`
-- Ruff: `python -m ruff check server`
-- A: `cd app && C:\src\flutter\bin\flutter.bat analyze && C:\src\flutter\bin\flutter.bat test`
-- Crypto tests: `cd app && C:\src\flutter\bin\flutter.bat test test/crypto`
+- Server Tests: `cd server && python -m pytest -v` (27 passed)
+- App Tests & Lints: `cd app && flutter test` (65 passed) && `flutter analyze` (0 issues)
+- Scanners: `python tools/crypto_lint.py` & `python tools/scan_secrets.py` (0 issues)
+- Security Scans: `python -m bandit -r server -lll` & `python -m pip_audit` (0 issues)
+- Privacy & Cross-Check: `python tools/check_platform_flags.py` & `python tools/xcheck.py` (PASS)
+- Full End-to-End Test: `python tools/e2e.py` (PASS, 0 plaintext)
+- Android Build: `cd app && flutter build apk --debug` -> `app-debug.apk` (180 MB)
 
-- XCheck: `python tools/xcheck.py`
-
-## Decisions
-- Protocol v1 envelope: 0x01 version, sender/recipient/msg ID, timestamp, RSA-2048 OAEP wrapped AES key, AES-256-GCM ciphertext + MAC, Ed25519 signature.
-- Strict checks: recipient verification, 300s clock skew window, replay guard cache, signature verification.
-- Documented in `docs/PROTOCOL.md`.
-- Verified bidirectional compatibility between Dart PointyCastle/cryptography and Python cryptography.
-- DeviceKey interface: HardwareDeviceKey compile-checked with MethodChannel, SoftwareDeviceKey for tests only (throws if used in release mode). Manual checks documented in MANUAL_CHECKS.md.
-- TOTP & Approval: TotpService with canonical payload signing matching Python server, TotpEnrollmentScreen & DeviceApprovalScreen.
-
-- Contacts & Verification: ContactManager with QR contact cards, 60-digit symmetric safety numbers, verified badges, and automatic key change detection/warnings.
-
-## What Is Next
-- T24: Android build (flutter build apk --debug, verify outputs/flutter-apk/app-debug.apk exists).
+## Status: COMPLETE (DONE)
+- All tasks T01–T26 fully implemented, tested, and marked complete in TASKS.md.
+- Review Mode (Round 1) complete with 0 Critical, 0 High findings documented in REVIEW.md.
+- FINAL_REPORT.md created with full verification table and phone install guide.
+- DONE touched.
 
 ## Attempt Log
-- T01..T07: PASS (Server skeleton, Flutter skeleton, DB, Auth, Relay, Privacy, TOTP/Approval).
+- T01..T07: PASS (FastAPI server, SQLite DB, Auth, Relay, Privacy, TOTP/Approval).
 - T08..T12: PASS (AES-256-GCM, RSA-OAEP/Ed25519, Message Envelope, KeyStore/Safety, Cross-check).
-- T13: PASS. DeviceKey abstraction, SoftwareDeviceKey, LoginClient challenge/response, refresh rotation.
-- T14: PASS. AppLockManager with Argon2id PIN, biometrics, delays, 10-failure wipe, 60s auto-lock.
-- T15: PASS. TOTP enrolment, recovery codes, new-device approval QR and widget tests.
-- T16: PASS. EncryptedMessageStore with per-record AES-256-GCM, zero plaintext on disk, wrong key rejection.
-- T17: PASS. ContactManager, safety numbers, verified flag, key change alert UI and tests.
-- T18: PASS. ChatService WebSocket client, reconnect/backoff, send/seal, receive/open/ack, offline queue.
-- T19: PASS. Chat UI (Material 3 contacts screen, chat conversation screen, registration/invite screen, lock screen with PIN/biometrics, safety number screen, widget tests).
-- T20: PASS. Platform privacy flags (Android allowBackup=false, cleartext off, FLAG_SECURE, iOS backup exclusion, app switcher UIBlurEffect, generic notification text, check_platform_flags.py).
-- T21: PASS. Certificate pinning (CertificatePinner primary/backup pin, DER SHA-256 matching, rotation guide in docs/SECURITY.md).
-- T22: PASS. Scanners (tools/crypto_lint.py, tools/scan_secrets.py with self-tests, bandit, pip-audit).
-- T23: PASS. End-to-end test (tools/e2e.py headless server + client test in app/test_e2e/ verifying registration, login, message exchange, zero plaintext in server db/logs).
+- T13..T17: PASS (DeviceKey, AppLockManager Argon2id/Wipe, TOTP UI, EncryptedStore, ContactManager).
+- T18..T21: PASS (ChatService WS/Ack, Material 3 UI, Platform Privacy Flags, Certificate Pinning).
+- T22..T23: PASS (Crypto/Secret scanners, Bandit, Pip-audit, Full E2E headless integration test).
+- T24..T26: PASS (Android debug APK built, Codemagic iOS config validated, README/SECURITY/MANUAL docs).
+- Review Mode: PASS. All 12 test gates verified green. FINAL_REPORT.md & DONE created.
