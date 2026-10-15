@@ -163,7 +163,7 @@ def register(req: RegisterRequest, request: Request) -> dict[str, str]:
 
         conn.execute(
             """
-            INSERT INTO devices (
+            INSERT OR REPLACE INTO devices (
                 id, user_id, device_signing_pub, device_encryption_pub, created_at
             )
             VALUES (?, ?, ?, ?, ?)
