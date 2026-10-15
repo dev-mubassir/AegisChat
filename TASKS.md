@@ -30,9 +30,10 @@
   Do: `POST /auth/challenge` (random one-time nonce, 60 s) and `POST /auth/verify` (ECDSA P-256 signature over the nonce) return a 10-minute access token and a rotating refresh token. Reusing an old refresh token revokes that token family. Rate limits on `/register` and `/auth/*` (per IP and per device).
   Check: S passes, with tests for replayed nonce, expired nonce, bad signature, refresh reuse and rate limit.
   Evidence: `cd server && python -m pytest -q` passed (12 passed in 2.17s: challenge, verify, replayed nonce, expired nonce, bad signature, refresh reuse family revocation, rate limits).
-- [ ] T05 Key directory and message relay
+- [x] T05 Key directory and message relay
   Do: `GET /keys/{user_id}` (login required). WebSocket `/ws` (token auth): receive, store ciphertext, deliver if the receiver is online, wait for the ack, then delete the row. Purge undelivered messages after 30 days. Size limit and ordering.
   Check: S passes, with tests for offline delivery, delete-on-ack, unauthorised and oversize messages.
+  Evidence: `cd server && python -m pytest -q` passed (18 passed in 2.77s: keys endpoint, offline delivery, delete-on-ack, unauthorised, oversize limits, 30-day purge).
 - [ ] T06 Server privacy
   Do: log redaction (no bodies, no tokens); security headers; CORS closed; request size limit. Test: send messages through the relay with a plaintext marker, then scan the SQLite file and the captured logs. The marker must not appear.
   Check: S passes.

@@ -1,11 +1,21 @@
 """Main FastAPI application for SecureChat."""
 
+import base64
 import secrets
 import time
+from collections import defaultdict
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import (
+    FastAPI,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from pydantic import BaseModel, Field
 
 from app.auth import (
@@ -13,6 +23,7 @@ from app.auth import (
     create_access_token,
     issue_refresh_token,
     rotate_refresh_token,
+    verify_access_token,
     verify_ecdsa_signature,
 )
 from app.database import get_db_connection, init_db
@@ -25,6 +36,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(title="SecureChat Server", lifespan=lifespan)
+
+# Active WebSocket connections: user_id -> list of WebSockets
+_active_ws: dict[str, list[WebSocket]] = defaultdict(list)
 
 
 class RegisterRequest(BaseModel):
@@ -95,7 +109,9 @@ def register(req: RegisterRequest, request: Request) -> dict[str, str]:
 
         conn.execute(
             """
-            INSERT INTO devices (id, user_id, device_signing_pub, device_encryption_pub, created_at)
+            INSERT INTO devices (
+                id, user_id, device_signing_pub, device_encryption_pub, created_at
+            )
             VALUES (?, ?, ?, ?, ?)
             """,
             (
@@ -208,3 +224,154 @@ def auth_refresh(req: RefreshRequest, request: Request) -> dict[str, Any]:
         "expires_in": 600,
         "refresh_token": new_refresh,
     }
+
+
+@app.get("/keys/{user_id}")
+def get_user_keys(
+    user_id: str, authorization: str | None = Header(None)
+) -> dict[str, Any]:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+
+    token = authorization.split(" ", 1)[1]
+    verify_access_token(token)
+
+    conn = get_db_connection()
+    user = conn.execute("SELECT id FROM users WHERE id = ?", (user_id,)).fetchone()
+    if not user:
+        conn.close()
+        raise HTTPException(status_code=404, detail="User not found")
+
+    rows = conn.execute(
+        """
+        SELECT id, device_signing_pub, device_encryption_pub
+        FROM devices WHERE user_id = ?
+        """,
+        (user_id,),
+    ).fetchall()
+    conn.close()
+
+    devices = [
+        {
+            "device_id": row["id"],
+            "device_signing_pub": row["device_signing_pub"],
+            "device_encryption_pub": row["device_encryption_pub"],
+        }
+        for row in rows
+    ]
+    return {"user_id": user_id, "devices": devices}
+
+
+@app.websocket("/ws")
+async def websocket_relay(
+    websocket: WebSocket, token: str | None = Query(None)
+) -> None:
+    if not token:
+        await websocket.close(code=1008)
+        return
+
+    try:
+        token_payload = verify_access_token(token)
+    except HTTPException:
+        await websocket.close(code=1008)
+        return
+
+    user_id = token_payload["user_id"]
+    await websocket.accept()
+    _active_ws[user_id].append(websocket)
+
+    conn = get_db_connection()
+    pending = conn.execute(
+        """
+        SELECT id, sender_id, recipient_id, ciphertext, created_at
+        FROM messages WHERE recipient_id = ?
+        ORDER BY created_at ASC
+        """,
+        (user_id,),
+    ).fetchall()
+    conn.close()
+
+    # Deliver pending messages
+    for msg in pending:
+        ct_b64 = base64.b64encode(msg["ciphertext"]).decode("utf-8")
+        await websocket.send_json(
+            {
+                "type": "message",
+                "message_id": msg["id"],
+                "sender_id": msg["sender_id"],
+                "recipient_id": msg["recipient_id"],
+                "ciphertext_b64": ct_b64,
+                "created_at": msg["created_at"],
+            }
+        )
+
+    try:
+        while True:
+            data = await websocket.receive_json()
+            action = data.get("action")
+
+            if action == "send":
+                msg_id = data.get("message_id")
+                recipient_id = data.get("recipient_id")
+                ct_b64 = data.get("ciphertext_b64", "")
+
+                try:
+                    ct_bytes = base64.b64decode(ct_b64)
+                except Exception:
+                    await websocket.send_json(
+                        {"type": "error", "detail": "Invalid ciphertext base64"}
+                    )
+                    continue
+
+                if len(ct_bytes) > 65536:
+                    await websocket.send_json(
+                        {"type": "error", "detail": "Message oversize: exceeds 64KB limit"}
+                    )
+                    continue
+
+                now = int(time.time())
+                db_conn = get_db_connection()
+                with db_conn:
+                    db_conn.execute(
+                        """
+                        INSERT INTO messages (
+                            id, sender_id, recipient_id, ciphertext, created_at, delivered
+                        )
+                        VALUES (?, ?, ?, ?, ?, 0)
+                        """,
+                        (msg_id, user_id, recipient_id, ct_bytes, now),
+                    )
+                db_conn.close()
+
+                # Deliver to online recipient if connected
+                if recipient_id in _active_ws and _active_ws[recipient_id]:
+                    for r_ws in _active_ws[recipient_id]:
+                        await r_ws.send_json(
+                            {
+                                "type": "message",
+                                "message_id": msg_id,
+                                "sender_id": user_id,
+                                "recipient_id": recipient_id,
+                                "ciphertext_b64": ct_b64,
+                                "created_at": now,
+                            }
+                        )
+
+            elif action == "ack":
+                msg_id = data.get("message_id")
+                db_conn = get_db_connection()
+                with db_conn:
+                    db_conn.execute(
+                        "DELETE FROM messages WHERE id = ? AND recipient_id = ?",
+                        (msg_id, user_id),
+                    )
+                db_conn.close()
+                await websocket.send_json({"status": "ack_ok", "message_id": msg_id})
+
+    except WebSocketDisconnect:
+        pass
+    finally:
+        if websocket in _active_ws[user_id]:
+            _active_ws[user_id].remove(websocket)
+            if not _active_ws[user_id]:
+                del _active_ws[user_id]

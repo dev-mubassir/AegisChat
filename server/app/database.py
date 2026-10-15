@@ -99,3 +99,21 @@ def create_invite(db_path: str | None = None, expires_in_seconds: int = 86400) -
         )
     conn.close()
     return code
+
+
+def purge_expired_messages(
+    db_path: str | None = None, max_age_seconds: int = 30 * 86400
+) -> int:
+    init_db(db_path)
+    now = int(time.time())
+    cutoff = now - max_age_seconds
+    conn = get_db_connection(db_path)
+    with conn:
+        cursor = conn.execute(
+            "DELETE FROM messages WHERE created_at < ?",
+            (cutoff,),
+        )
+        count = cursor.rowcount
+    conn.close()
+    return count
+

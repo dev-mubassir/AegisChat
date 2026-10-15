@@ -13,16 +13,18 @@
 - CLI Invite: `python server/manage.py create-invite`
 
 ## Decisions
-- Challenge login: 60s one-time nonces signed with ECDSA P-256 (SHA-256).
-- Auth returns 10-minute HMAC-SHA256 access tokens and 30-day rotating refresh tokens.
-- Reusing an old refresh token immediately revokes the entire token family.
-- Sliding window rate limiting applied to /register and /auth/* per IP and device.
+- GET /keys/{user_id} protected by Bearer access token.
+- WebSocket /ws verifies token query parameter, pushes pending messages on connect.
+- Max message size set to 64KB.
+- Server deletes message row upon recipient ack.
+- purge_expired_messages deletes undelivered messages older than 30 days.
 
 ## What Is Next
-- T05: Key directory and message relay (GET /keys/{user_id}, WebSocket /ws, ack & delete, offline delivery).
+- T06: Server privacy (log redaction, security headers, CORS closed, request size limit, zero-plaintext test).
 
 ## Attempt Log
-- T01: PASS. Repo and server skeleton with /health.
-- T02: PASS. Flutter skeleton with pinned dependencies; analyze and test green.
-- T03: PASS. SQLite tables, manage.py create-invite, POST /register with invite verification.
-- T04: PASS. Challenge login, ECDSA signature verification, token rotation, family revocation on reuse, rate limits.
+- T01: PASS. Server skeleton and pytest/ruff config.
+- T02: PASS. Flutter skeleton with pinned dependencies.
+- T03: PASS. SQLite tables, create-invite, POST /register.
+- T04: PASS. Challenge login, signature verify, token rotation & revocation, rate limits.
+- T05: PASS. Key directory, WebSocket relay, delete-on-ack, offline delivery, 30-day purge.
