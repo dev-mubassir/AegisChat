@@ -22,9 +22,10 @@
 
 ## Server
 
-- [ ] T03 Database and invites
+- [x] T03 Database and invites
   Do: SQLite tables for users, devices (public keys), invites (one-time, expiring), messages (ciphertext bytes, sender, recipient, created, delivered) and refresh tokens. `server/manage.py create-invite`. `POST /register` takes an invite and the phone's public keys.
   Check: S passes, with tests for a valid, reused, expired and invalid invite.
+  Evidence: `cd server && python -m pytest -q` passed (6 passed in 1.23s: valid, reused, expired, invalid invites and CLI create-invite).
 - [ ] T04 Challenge login and tokens
   Do: `POST /auth/challenge` (random one-time nonce, 60 s) and `POST /auth/verify` (ECDSA P-256 signature over the nonce) return a 10-minute access token and a rotating refresh token. Reusing an old refresh token revokes that token family. Rate limits on `/register` and `/auth/*` (per IP and per device).
   Check: S passes, with tests for replayed nonce, expired nonce, bad signature, refresh reuse and rate limit.
