@@ -17,6 +17,7 @@ import 'package:app/ui/registration_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:pointycastle/asymmetric/api.dart' show RSAPublicKey, RSAPrivateKey;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -107,6 +108,8 @@ class _SecureChatHomeState extends State<SecureChatHome> {
   ChatService? _chatService;
   EncryptedMessageStore? _messageStore;
   Uint8List _localSigningKeyBytes = Uint8List(32);
+  String? _currentUserId;
+  String? _currentEncryptionPub;
 
   bool _isLoading = true;
   bool _isRegistered = false;
@@ -196,8 +199,24 @@ class _SecureChatHomeState extends State<SecureChatHome> {
 
     // Retrieve or generate session keys
     final devKey = SoftwareDeviceKey.generate(allowInReleaseForTesting: true);
-    final rsa = RsaOaep();
-    final rsaPair = await rsa.generateKeyPair();
+    final modStr = await _keyStore.read('rsa_modulus');
+    final privExpStr = await _keyStore.read('rsa_priv_exponent');
+    final pStr = await _keyStore.read('rsa_p');
+    final qStr = await _keyStore.read('rsa_q');
+    RsaKeyPair rsaPair;
+    if (modStr != null && privExpStr != null && pStr != null && qStr != null) {
+      final mod = BigInt.parse(modStr, radix: 16);
+      final exp = BigInt.parse(await _keyStore.read('rsa_exponent') ?? '10001', radix: 16);
+      final privExp = BigInt.parse(privExpStr, radix: 16);
+      final p = BigInt.parse(pStr, radix: 16);
+      final q = BigInt.parse(qStr, radix: 16);
+      final pub = RSAPublicKey(mod, exp);
+      final priv = RSAPrivateKey(mod, privExp, p, q);
+      rsaPair = RsaKeyPair(publicKey: pub, privateKey: priv);
+    } else {
+      final rsa = RsaOaep();
+      rsaPair = await rsa.generateKeyPair();
+    }
     final signer = MessageSigner();
     final signingPair = await signer.generateKeyPair();
     final signingPubBytes = await signer.getPublicKeyBytes(signingPair);
@@ -238,6 +257,8 @@ class _SecureChatHomeState extends State<SecureChatHome> {
     _chatService = chatService;
     _messageStore = messageStore;
     _localSigningKeyBytes = signingPubBytes;
+    _currentUserId = userId;
+    _currentEncryptionPub = await _keyStore.read('rsa_pub_hex') ?? formatRsaPublicKeyHex(rsaPair.publicKey);
   }
 
   void _onUnlocked() async {
@@ -345,11 +366,21 @@ class _SecureChatHomeState extends State<SecureChatHome> {
     );
     chatService.connect();
 
+    final rsaPubHex = formatRsaPublicKeyHex(rsaPair.publicKey);
+    await _keyStore.write('rsa_modulus', rsaPair.publicKey.modulus!.toRadixString(16));
+    await _keyStore.write('rsa_exponent', rsaPair.publicKey.exponent!.toRadixString(16));
+    await _keyStore.write('rsa_priv_exponent', rsaPair.privateKey.privateExponent!.toRadixString(16));
+    await _keyStore.write('rsa_p', rsaPair.privateKey.p!.toRadixString(16));
+    await _keyStore.write('rsa_q', rsaPair.privateKey.q!.toRadixString(16));
+    await _keyStore.write('rsa_pub_hex', rsaPubHex);
+
     setState(() {
       _contactManager = contactManager;
       _chatService = chatService;
       _messageStore = messageStore;
       _localSigningKeyBytes = signingPubBytes;
+      _currentUserId = username;
+      _currentEncryptionPub = rsaPubHex;
       _isRegistered = true;
       _isUnlocked = true;
     });
@@ -388,6 +419,8 @@ class _SecureChatHomeState extends State<SecureChatHome> {
       return ContactsScreen(
         contactManager: _contactManager!,
         localSigningKeyBytes: _localSigningKeyBytes,
+        myUserId: _currentUserId,
+        myEncryptionPub: _currentEncryptionPub,
         onContactSelected: (contact) {
           if (_chatService != null && _messageStore != null) {
             Navigator.of(context).push(

@@ -8,12 +8,16 @@ class ContactsScreen extends StatefulWidget {
   final ContactManager contactManager;
   final Uint8List localSigningKeyBytes;
   final void Function(Contact contact)? onContactSelected;
+  final String? myUserId;
+  final String? myEncryptionPub;
 
   const ContactsScreen({
     super.key,
     required this.contactManager,
     required this.localSigningKeyBytes,
     this.onContactSelected,
+    this.myUserId,
+    this.myEncryptionPub,
   });
 
   @override
@@ -35,6 +39,55 @@ class _ContactsScreenState extends State<ContactsScreen> {
   void dispose() {
     _qrInputController.dispose();
     super.dispose();
+  }
+
+  void _showMyContactCardDialog() {
+    if (widget.myUserId == null || widget.myEncryptionPub == null) return;
+    final signingHex = widget.localSigningKeyBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    final card = ContactQrPayload(
+      userId: widget.myUserId!,
+      displayName: widget.myUserId!,
+      signingPublicKeyHex: signingHex,
+      encryptionPublicKeyPem: widget.myEncryptionPub!,
+    );
+    final jsonStr = card.toJsonString();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('My Contact Card'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Share this JSON card with contacts so they can add you:'),
+              const SizedBox(height: 12),
+              SelectableText(
+                jsonStr,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton.icon(
+            icon: const Icon(Icons.copy),
+            label: const Text('Copy JSON'),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Contact card JSON copied!')),
+              );
+              Navigator.of(ctx).pop();
+            },
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showAddContactDialog() {
@@ -199,9 +252,17 @@ class _ContactsScreenState extends State<ContactsScreen> {
       appBar: AppBar(
         title: const Text('Contacts'),
         actions: [
+          if (widget.myUserId != null && widget.myEncryptionPub != null)
+            IconButton(
+              key: const Key('my_contact_card_button'),
+              icon: const Icon(Icons.badge_outlined),
+              tooltip: 'My Contact Card',
+              onPressed: _showMyContactCardDialog,
+            ),
           IconButton(
             key: const Key('add_contact_button'),
             icon: const Icon(Icons.person_add),
+            tooltip: 'Add Contact',
             onPressed: _showAddContactDialog,
           ),
         ],

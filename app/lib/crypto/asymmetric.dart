@@ -1,9 +1,71 @@
+import 'dart:convert';
 import 'dart:isolate';
 import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart' as crypto;
+import 'package:pointycastle/asn1.dart';
 import 'package:pointycastle/export.dart';
+
+/// Serializes an RSAPublicKey to a compact hex string representation "modulusHex:exponentHex".
+String formatRsaPublicKeyHex(RSAPublicKey key) {
+  return '${key.modulus!.toRadixString(16)}:${key.exponent!.toRadixString(16)}';
+}
+
+/// Parses an RSA public key from:
+/// 1. "modulusHex:exponentHex" (simple compact serialization)
+/// 2. PEM format (SubjectPublicKeyInfo or PKCS#1)
+/// 3. Raw Base64 DER
+RSAPublicKey? parseRsaPublicKey(String input) {
+  final clean = input.trim();
+  if (clean.contains(':')) {
+    final parts = clean.split(':');
+    if (parts.length == 2) {
+      try {
+        final mod = BigInt.parse(parts[0], radix: 16);
+        final exp = BigInt.parse(parts[1], radix: 16);
+        return RSAPublicKey(mod, exp);
+      } catch (_) {}
+    }
+  }
+
+  try {
+    String b64 = clean;
+    if (clean.contains('-----BEGIN')) {
+      final lines = clean.split('\n').where((l) => !l.startsWith('-----')).join();
+      b64 = lines.replaceAll(RegExp(r'\s+'), '');
+    }
+    final bytes = base64.decode(b64);
+    final parser = ASN1Parser(bytes);
+    final topSeq = parser.nextObject() as ASN1Sequence;
+
+    if (topSeq.elements != null &&
+        topSeq.elements!.length == 2 &&
+        topSeq.elements![1] is ASN1BitString) {
+      final bitString = topSeq.elements![1] as ASN1BitString;
+      final innerBytes = bitString.stringValues;
+      if (innerBytes != null) {
+        final innerParser = ASN1Parser(Uint8List.fromList(innerBytes));
+        final rsaSeq = innerParser.nextObject() as ASN1Sequence;
+        final mod = (rsaSeq.elements![0] as ASN1Integer).integer;
+        final exp = (rsaSeq.elements![1] as ASN1Integer).integer;
+        if (mod != null && exp != null) {
+          return RSAPublicKey(mod, exp);
+        }
+      }
+    } else if (topSeq.elements != null &&
+        topSeq.elements!.length >= 2 &&
+        topSeq.elements![0] is ASN1Integer) {
+      final mod = (topSeq.elements![0] as ASN1Integer).integer;
+      final exp = (topSeq.elements![1] as ASN1Integer).integer;
+      if (mod != null && exp != null) {
+        return RSAPublicKey(mod, exp);
+      }
+    }
+  } catch (_) {}
+
+  return null;
+}
 
 /// Container for an RSA-2048 keypair.
 class RsaKeyPair {

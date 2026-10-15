@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:app/crypto/asymmetric.dart';
 import 'package:app/crypto/safety_number.dart';
 import 'package:pointycastle/export.dart';
 
@@ -45,15 +46,19 @@ class Contact {
         'has_key_changed': hasKeyChanged,
       };
 
-  factory Contact.fromJson(Map<String, dynamic> json) => Contact(
-        userId: json['user_id'] as String,
-        displayName: json['display_name'] as String,
-        signingPublicKeyHex: json['signing_public_key_hex'] as String,
-        encryptionPublicKeyPem: json['encryption_public_key_pem'] as String,
-        isVerified: json['is_verified'] as bool? ?? false,
-        previousKeyHex: json['previous_key_hex'] as String?,
-        hasKeyChanged: json['has_key_changed'] as bool? ?? false,
-      );
+  factory Contact.fromJson(Map<String, dynamic> json) {
+    final pem = json['encryption_public_key_pem'] as String;
+    return Contact(
+      userId: json['user_id'] as String,
+      displayName: json['display_name'] as String,
+      signingPublicKeyHex: json['signing_public_key_hex'] as String,
+      encryptionPublicKeyPem: pem,
+      rsaPublicKey: parseRsaPublicKey(pem),
+      isVerified: json['is_verified'] as bool? ?? false,
+      previousKeyHex: json['previous_key_hex'] as String?,
+      hasKeyChanged: json['has_key_changed'] as bool? ?? false,
+    );
+  }
 }
 
 class ContactQrPayload {
@@ -152,6 +157,7 @@ class ContactManager {
   /// Detects if an existing contact's public key has changed (MITM or reinstallation).
   Future<Contact> addOrUpdateFromQr(ContactQrPayload payload) async {
     final existing = _contacts[payload.userId];
+    final parsedRsa = parseRsaPublicKey(payload.encryptionPublicKeyPem);
 
     if (existing != null) {
       if (existing.signingPublicKeyHex != payload.signingPublicKeyHex) {
@@ -165,6 +171,7 @@ class ContactManager {
           displayName: payload.displayName,
           signingPublicKeyHex: payload.signingPublicKeyHex,
           encryptionPublicKeyPem: payload.encryptionPublicKeyPem,
+          rsaPublicKey: parsedRsa,
           isVerified: false,
           previousKeyHex: existing.previousKeyHex,
           hasKeyChanged: true,
@@ -178,6 +185,7 @@ class ContactManager {
           displayName: payload.displayName,
           signingPublicKeyHex: existing.signingPublicKeyHex,
           encryptionPublicKeyPem: payload.encryptionPublicKeyPem,
+          rsaPublicKey: parsedRsa ?? existing.rsaPublicKey,
           isVerified: existing.isVerified,
           previousKeyHex: existing.previousKeyHex,
           hasKeyChanged: existing.hasKeyChanged,
@@ -193,6 +201,7 @@ class ContactManager {
         displayName: payload.displayName,
         signingPublicKeyHex: payload.signingPublicKeyHex,
         encryptionPublicKeyPem: payload.encryptionPublicKeyPem,
+        rsaPublicKey: parsedRsa,
         isVerified: false,
         hasKeyChanged: false,
       );
