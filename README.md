@@ -1,12 +1,12 @@
 # AegisChat: Zero-Knowledge, Hardware-Backed Encrypted Messenger
 
 <p align="center">
+  <a href="https://github.com/dev-mubassir/AegisChat/releases/latest"><img src="https://img.shields.io/github/v/release/dev-mubassir/AegisChat?style=for-the-badge&logo=github&color=0ea5e9" alt="Latest Release" /></a>
+  <a href="https://github.com/dev-mubassir/AegisChat/releases/latest/download/AegisChat-v1.0.0-android.apk"><img src="https://img.shields.io/badge/Download-Android%20APK-22c55e?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" /></a>
   <img src="https://img.shields.io/badge/Security-Zero--Knowledge-0ea5e9?style=for-the-badge&logo=shield" alt="Zero-Knowledge" />
   <img src="https://img.shields.io/badge/Flutter-3.47+-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter" />
   <img src="https://img.shields.io/badge/FastAPI-0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
   <img src="https://img.shields.io/badge/Cipher-AES--256--GCM-blue?style=for-the-badge" alt="AES-256-GCM" />
-  <img src="https://img.shields.io/badge/KEM-RSA--2048--OAEP-purple?style=for-the-badge" alt="RSA-OAEP" />
-  <img src="https://img.shields.io/badge/Signatures-Ed25519-green?style=for-the-badge" alt="Ed25519" />
   <img src="https://img.shields.io/badge/License-MIT-amber?style=for-the-badge" alt="License MIT" />
 </p>
 
