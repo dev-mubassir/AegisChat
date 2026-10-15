@@ -1,0 +1,33 @@
+# Environment and secrets
+.env
+.env.*
+*.env
+*.pem
+*.key
+*.priv
+*.jks
+*.keystore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+.ruff_cache/
+
+# Build & Logs
+build/
+app/build/
+dist/
+*.egg-info/
+logs/
+*.log
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
