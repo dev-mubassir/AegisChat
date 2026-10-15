@@ -20,17 +20,14 @@
 - Documented in `docs/PROTOCOL.md`.
 - Verified bidirectional compatibility between Dart PointyCastle/cryptography and Python cryptography.
 - DeviceKey interface: HardwareDeviceKey compile-checked with MethodChannel, SoftwareDeviceKey for tests only (throws if used in release mode). Manual checks documented in MANUAL_CHECKS.md.
-- App lock: Argon2id 6-digit PIN derivation, 5s-300s progressive lockout delays, 10-failure automatic key wiping, and 60s background auto-lock.
+- TOTP & Approval: TotpService with canonical payload signing matching Python server, TotpEnrollmentScreen & DeviceApprovalScreen.
 
 ## What Is Next
-- T15: TOTP, recovery and new-device screens (TOTP enrolment, single-use recovery codes, new-device approval QR).
+- T16: Encrypted local storage (AES-256-GCM record-level encryption with KeyStore, no plaintext on disk).
 
 ## Attempt Log
 - T01..T07: PASS (Server skeleton, Flutter skeleton, DB, Auth, Relay, Privacy, TOTP/Approval).
-- T08: PASS. AES-256-GCM authenticated encryption.
-- T09: PASS. RSA-2048 OAEP key wrap/unwrap, Ed25519 sign & verify.
-- T10: PASS. Message envelope seal() and open(), replay guard, clock skew, protocol spec.
-- T11: PASS. KeyStore abstraction & in-memory fake, 60-digit symmetric safety number, QR verification payload.
-- T12: PASS. Bidirectional cross-language crypto checks (Dart <-> Python reference implementation).
-- T13: PASS. DeviceKey abstraction, SoftwareDeviceKey ECDSA P-256, LoginClient challenge/response, refresh rotation.
-- T14: PASS. AppLockManager with Argon2id PIN, biometrics, delays, 10-failure wipe, 60s background auto-lock.
+- T08..T12: PASS (AES-256-GCM, RSA-OAEP/Ed25519, Message Envelope, KeyStore/Safety, Cross-check).
+- T13: PASS. DeviceKey abstraction, SoftwareDeviceKey, LoginClient challenge/response, refresh rotation.
+- T14: PASS. AppLockManager with Argon2id PIN, biometrics, delays, 10-failure wipe, 60s auto-lock.
+- T15: PASS. TOTP enrolment, recovery codes, new-device approval QR and widget tests.

@@ -76,9 +76,10 @@
   Do: biometric (`local_auth`) plus 6-digit PIN (Argon2id-derived key), a growing delay after wrong tries, wipe local keys after 10 failures, auto-lock after 60 s in the background.
   Check: A passes (tests use a fake clock and fake storage).
   Evidence: `flutter analyze` clean (0 issues) and `flutter test` passed (37 tests passed: 6-digit Argon2id PIN setup/verify, 5s-300s growing delays, 10-failure key wipe, 60s background auto-lock, biometric unlock).
-- [ ] T15 TOTP, recovery and new-device screens
+- [x] T15 TOTP, recovery and new-device screens
   Do: TOTP enrolment, recovery codes shown once, new-device approval by QR on both phones (logic and widget tests).
   Check: A passes.
+  Evidence: `flutter analyze` clean (0 issues) and `flutter test` passed (42 tests passed: TotpService HTTP enroll/confirm, canonical payload ECDSA signing, TotpEnrollmentScreen QR/recovery codes, DeviceApprovalScreen QR/approver).
 
 ## Chat
 
