@@ -1,6 +1,7 @@
 """Main FastAPI application for SecureChat."""
 
 import base64
+import logging
 import secrets
 import time
 from collections import defaultdict
@@ -16,6 +17,7 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
 )
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from app.auth import (
@@ -28,6 +30,9 @@ from app.auth import (
 )
 from app.database import get_db_connection, init_db
 
+logger = logging.getLogger("securechat")
+MAX_REQUEST_SIZE = 1024 * 1024  # 1 MB
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -36,6 +41,51 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(title="SecureChat Server", lifespan=lifespan)
+
+
+@app.middleware("http")
+async def security_and_privacy_middleware(request: Request, call_next: Any) -> Any:
+    # 1. Check request size limit
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > MAX_REQUEST_SIZE:
+        return JSONResponse(
+            status_code=413,
+            content={"detail": "Payload too large. Max request size is 1MB."},
+        )
+
+    # 2. Execute call
+    start_time = time.time()
+    response = await call_next(request)
+    duration_ms = (time.time() - start_time) * 1000
+
+    # 3. Log safe metadata only (no bodies, no query strings with tokens, no headers)
+    client_ip = request.client.host if request.client else "unknown"
+    logger.info(
+        "%s %s -> %s (%.2f ms) [client: %s]",
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration_ms,
+        client_ip,
+    )
+
+    # 4. Attach strict security headers
+    response.headers["x-content-type-options"] = "nosniff"
+    response.headers["x-frame-options"] = "DENY"
+    response.headers["strict-transport-security"] = (
+        "max-age=63072000; includeSubDomains; preload"
+    )
+    response.headers["content-security-policy"] = (
+        "default-src 'none'; frame-ancestors 'none'"
+    )
+    response.headers["referrer-policy"] = "no-referrer"
+    response.headers["permissions-policy"] = (
+        "accelerometer=(), camera=(), geolocation=(), gyroscope=(), "
+        "magnetometer=(), microphone=(), payment=(), usb=()"
+    )
+
+    return response
+
 
 # Active WebSocket connections: user_id -> list of WebSockets
 _active_ws: dict[str, list[WebSocket]] = defaultdict(list)

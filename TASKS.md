@@ -34,9 +34,10 @@
   Do: `GET /keys/{user_id}` (login required). WebSocket `/ws` (token auth): receive, store ciphertext, deliver if the receiver is online, wait for the ack, then delete the row. Purge undelivered messages after 30 days. Size limit and ordering.
   Check: S passes, with tests for offline delivery, delete-on-ack, unauthorised and oversize messages.
   Evidence: `cd server && python -m pytest -q` passed (18 passed in 2.77s: keys endpoint, offline delivery, delete-on-ack, unauthorised, oversize limits, 30-day purge).
-- [ ] T06 Server privacy
+- [x] T06 Server privacy
   Do: log redaction (no bodies, no tokens); security headers; CORS closed; request size limit. Test: send messages through the relay with a plaintext marker, then scan the SQLite file and the captured logs. The marker must not appear.
   Check: S passes.
+  Evidence: `cd server && python -m pytest -q` passed (22 passed in 3.13s: log redaction, security headers, closed CORS, request size limit, zero plaintext/tokens in DB/logs).
 - [ ] T07 TOTP, recovery codes, new-device approval
   Do: `pyotp` TOTP enrolment and check; 10 single-use recovery codes stored hashed (Argon2id); new-device approval = the old device signs the new device's key (QR payload) and a TOTP code is required.
   Check: S passes, with tests for wrong code, reused recovery code and approval from an unknown device.
