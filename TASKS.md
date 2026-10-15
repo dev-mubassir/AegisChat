@@ -53,9 +53,10 @@
   Do: RSA-2048 key generation (run it in a background isolate: pure-Dart RSA key generation can take many seconds), OAEP-SHA256 wrap and unwrap of a 32-byte key, Ed25519 (or RSA-PSS) sign and verify.
   Check: `cd app && flutter test test/crypto` passes, with tests for round trip, wrong key, two wraps of one key differ, and tampered signature.
   Evidence: `cd app && flutter test test/crypto` passed (13 passed: isolate keygen, OAEP-SHA256 wrap/unwrap, probabilistic padding, wrong key rejection, Ed25519 sign/verify, tampered sig/msg rejection).
-- [ ] T10 Message envelope
+- [x] T10 Message envelope
   Do: `seal()` and `open()` combine T08 and T09. Versioned format written in `docs/PROTOCOL.md`. Associated data = sender id + recipient id + message id + timestamp. Replay guard by message id. Reject a wrong recipient and timestamps outside the allowed clock skew.
   Check: same command, with tests for round trip, tampering with any field, replay and wrong recipient.
+  Evidence: `cd app && flutter test test/crypto` passed (18 passed: round trip, tampering with any field, replay, wrong recipient, clock skew) and `flutter analyze` clean.
 - [ ] T11 Key storage and safety numbers
   Do: `KeyStore` interface over `flutter_secure_storage` (plus an in-memory fake for tests). Keys are never written anywhere else. A 60-digit safety number and a QR payload from two public keys, identical on both phones.
   Check: A passes.

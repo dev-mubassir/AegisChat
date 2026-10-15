@@ -13,14 +13,15 @@
 - Crypto tests: `cd app && C:\src\flutter\bin\flutter.bat test test/crypto`
 
 ## Decisions
-- RSA-2048 key generation runs in background worker isolate (`Isolate.run`).
-- Key wrapping uses OAEP with SHA-256 digest and randomized Fortuna padding for 32-byte AES key.
-- Digital signatures use Ed25519 (64-byte signatures, 32-byte public keys).
+- Protocol v1 envelope: 0x01 version, sender/recipient/msg ID, timestamp, RSA-2048 OAEP wrapped AES key, AES-256-GCM ciphertext + MAC, Ed25519 signature.
+- Strict checks: recipient verification, 300s clock skew window, replay guard cache, signature verification.
+- Documented in `docs/PROTOCOL.md`.
 
 ## What Is Next
-- T10: Message envelope (`seal()` and `open()`, docs/PROTOCOL.md, associated data, replay guard, clock skew).
+- T11: Key storage and safety numbers (KeyStore interface, in-memory fake, 60-digit safety number, QR payload).
 
 ## Attempt Log
 - T01..T07: PASS (Server skeleton, Flutter skeleton, DB, Auth, Relay, Privacy, TOTP/Approval).
-- T08: PASS. AES-256-GCM encryption/decryption, KAT vectors, 10k unique nonces.
-- T09: PASS. RSA-2048 OAEP key wrap/unwrap, Isolate keygen, Ed25519 sign & verify.
+- T08: PASS. AES-256-GCM authenticated encryption.
+- T09: PASS. RSA-2048 OAEP key wrap/unwrap, Ed25519 sign & verify.
+- T10: PASS. Message envelope seal() and open(), replay guard, clock skew, protocol spec.
