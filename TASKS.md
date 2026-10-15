@@ -68,9 +68,10 @@
 
 ## App login
 
-- [ ] T13 Device key and login
+- [x] T13 Device key and login
   Do: `DeviceKey` interface with `HardwareDeviceKey` (Android Keystore/StrongBox and iOS Secure Enclave through a platform channel; P-256, non-exportable, biometric-gated; compile-checked only) and `SoftwareDeviceKey` (tests only). Login client: challenge, sign, tokens, secure token storage, refresh rotation. Put the hardware parts in `MANUAL_CHECKS.md`.
   Check: A passes (tests use `SoftwareDeviceKey` and a fake HTTP server).
+  Evidence: `flutter analyze` clean (0 issues) and `flutter test` passed (31 tests passed: SoftwareDeviceKey SPKI PEM + signature, challenge-response login, 404/401 handling, refresh rotation, reuse purge, logout).
 - [ ] T14 App lock
   Do: biometric (`local_auth`) plus 6-digit PIN (Argon2id-derived key), a growing delay after wrong tries, wipe local keys after 10 failures, auto-lock after 60 s in the background.
   Check: A passes (tests use a fake clock and fake storage).

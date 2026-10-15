@@ -19,9 +19,10 @@
 - Strict checks: recipient verification, 300s clock skew window, replay guard cache, signature verification.
 - Documented in `docs/PROTOCOL.md`.
 - Verified bidirectional compatibility between Dart PointyCastle/cryptography and Python cryptography.
+- DeviceKey interface: HardwareDeviceKey compile-checked with MethodChannel, SoftwareDeviceKey for tests only (throws if used in release mode). Manual checks documented in MANUAL_CHECKS.md.
 
 ## What Is Next
-- T13: Device key and login (DeviceKey interface, HardwareDeviceKey, SoftwareDeviceKey, challenge login, refresh rotation).
+- T14: App lock (biometrics with local_auth + 6-digit PIN Argon2id, progressive delay, 10-try wipe, 60s background auto-lock).
 
 ## Attempt Log
 - T01..T07: PASS (Server skeleton, Flutter skeleton, DB, Auth, Relay, Privacy, TOTP/Approval).
@@ -30,3 +31,4 @@
 - T10: PASS. Message envelope seal() and open(), replay guard, clock skew, protocol spec.
 - T11: PASS. KeyStore abstraction & in-memory fake, 60-digit symmetric safety number, QR verification payload.
 - T12: PASS. Bidirectional cross-language crypto checks (Dart <-> Python reference implementation).
+- T13: PASS. DeviceKey abstraction, SoftwareDeviceKey ECDSA P-256, LoginClient challenge/response, refresh rotation.
