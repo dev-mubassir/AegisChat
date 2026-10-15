@@ -37,3 +37,5 @@ logs/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
+*.apk
+release_notes.md
