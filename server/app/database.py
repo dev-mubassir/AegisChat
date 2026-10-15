@@ -78,9 +78,26 @@ def init_db(db_path: str | None = None) -> None:
                 used INTEGER NOT NULL DEFAULT 0
             );
 
+            CREATE TABLE IF NOT EXISTS user_totp (
+                user_id TEXT PRIMARY KEY,
+                totp_secret TEXT NOT NULL,
+                confirmed INTEGER DEFAULT 0,
+                created_at INTEGER NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS recovery_codes (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                code_hash TEXT NOT NULL,
+                used INTEGER DEFAULT 0,
+                created_at INTEGER NOT NULL,
+                used_at INTEGER
+            );
+
             CREATE INDEX IF NOT EXISTS idx_devices_user ON devices(user_id);
             CREATE INDEX IF NOT EXISTS idx_messages_recipient ON messages(recipient_id, delivered);
             CREATE INDEX IF NOT EXISTS idx_refresh_token_hash ON refresh_tokens(token_hash);
+            CREATE INDEX IF NOT EXISTS idx_recovery_codes_user ON recovery_codes(user_id, used);
             """
         )
     conn.close()

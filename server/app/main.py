@@ -1,6 +1,7 @@
 """Main FastAPI application for SecureChat."""
 
 import base64
+import json
 import logging
 import secrets
 import time
@@ -8,6 +9,9 @@ from collections import defaultdict
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator
 
+import pyotp
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
 from fastapi import (
     FastAPI,
     Header,
@@ -425,3 +429,209 @@ async def websocket_relay(
             _active_ws[user_id].remove(websocket)
             if not _active_ws[user_id]:
                 del _active_ws[user_id]
+
+
+class ConfirmTotpRequest(BaseModel):
+    code: str = Field(..., min_length=6, max_length=6)
+
+
+class CheckTotpRequest(BaseModel):
+    user_id: str
+    code: str
+
+
+class ApproveDeviceRequest(BaseModel):
+    user_id: str
+    old_device_id: str
+    new_device_id: str
+    new_device_signing_pub: str
+    new_device_encryption_pub: str
+    approval_signature: str
+    totp_code: str
+
+
+_ph = PasswordHasher()
+
+
+def _verify_user_code(user_id: str, code: str) -> bool:
+    conn = get_db_connection()
+    # 1. Try TOTP
+    totp_row = conn.execute(
+        "SELECT totp_secret FROM user_totp WHERE user_id = ?",
+        (user_id,),
+    ).fetchone()
+
+    if totp_row:
+        totp = pyotp.TOTP(totp_row["totp_secret"])
+        if totp.verify(code, valid_window=1):
+            conn.close()
+            return True
+
+    # 2. Try recovery codes
+    now = int(time.time())
+    rows = conn.execute(
+        "SELECT id, code_hash, used FROM recovery_codes WHERE user_id = ?",
+        (user_id,),
+    ).fetchall()
+
+    for row in rows:
+        try:
+            if _ph.verify(row["code_hash"], code):
+                if row["used"] != 0:
+                    conn.close()
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Recovery code already used",
+                    )
+                with conn:
+                    conn.execute(
+                        "UPDATE recovery_codes SET used = 1, used_at = ? WHERE id = ?",
+                        (now, row["id"]),
+                    )
+                conn.close()
+                return True
+        except VerifyMismatchError:
+            continue
+
+    conn.close()
+    return False
+
+
+@app.post("/auth/totp/enroll")
+def totp_enroll(authorization: str | None = Header(None)) -> dict[str, Any]:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid token")
+    token = authorization.split(" ", 1)[1]
+    payload = verify_access_token(token)
+    user_id = payload["user_id"]
+
+    secret = pyotp.random_base32()
+    otpauth_url = pyotp.totp.TOTP(secret).provisioning_uri(
+        name=user_id, issuer_name="SecureChat"
+    )
+
+    now = int(time.time())
+    recovery_codes = [secrets.token_hex(8) for _ in range(10)]
+
+    conn = get_db_connection()
+    with conn:
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO user_totp (user_id, totp_secret, confirmed, created_at)
+            VALUES (?, ?, 0, ?)
+            """,
+            (user_id, secret, now),
+        )
+        # Invalidate old recovery codes
+        conn.execute("DELETE FROM recovery_codes WHERE user_id = ?", (user_id,))
+        for c in recovery_codes:
+            chash = _ph.hash(c)
+            conn.execute(
+                """
+                INSERT INTO recovery_codes (id, user_id, code_hash, used, created_at)
+                VALUES (?, ?, ?, 0, ?)
+                """,
+                (secrets.token_hex(16), user_id, chash, now),
+            )
+    conn.close()
+
+    return {
+        "secret": secret,
+        "otpauth_url": otpauth_url,
+        "recovery_codes": recovery_codes,
+    }
+
+
+@app.post("/auth/totp/confirm")
+def totp_confirm(
+    req: ConfirmTotpRequest, authorization: str | None = Header(None)
+) -> dict[str, str]:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid token")
+    token = authorization.split(" ", 1)[1]
+    payload = verify_access_token(token)
+    user_id = payload["user_id"]
+
+    conn = get_db_connection()
+    row = conn.execute(
+        "SELECT totp_secret FROM user_totp WHERE user_id = ?",
+        (user_id,),
+    ).fetchone()
+
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=400, detail="TOTP not enrolled")
+
+    totp = pyotp.TOTP(row["totp_secret"])
+    if not totp.verify(req.code, valid_window=1):
+        conn.close()
+        raise HTTPException(status_code=400, detail="Wrong or invalid TOTP code")
+
+    with conn:
+        conn.execute("UPDATE user_totp SET confirmed = 1 WHERE user_id = ?", (user_id,))
+    conn.close()
+
+    return {"status": "ok"}
+
+
+@app.post("/auth/totp/check")
+def totp_check(req: CheckTotpRequest) -> dict[str, str]:
+    if not _verify_user_code(req.user_id, req.code):
+        raise HTTPException(status_code=400, detail="Invalid code")
+    return {"status": "ok"}
+
+
+@app.post("/devices/approve")
+def approve_device(req: ApproveDeviceRequest) -> dict[str, str]:
+    # 1. Verify old device exists
+    conn = get_db_connection()
+    old_dev = conn.execute(
+        "SELECT device_signing_pub FROM devices WHERE id = ? AND user_id = ?",
+        (req.old_device_id, req.user_id),
+    ).fetchone()
+
+    if not old_dev:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Approval from unknown device")
+
+    old_signing_pub = old_dev["device_signing_pub"]
+
+    # 2. Verify TOTP or recovery code
+    if not _verify_user_code(req.user_id, req.totp_code):
+        conn.close()
+        raise HTTPException(status_code=400, detail="Invalid TOTP or recovery code")
+
+    # 3. Canonical payload check
+    payload_dict = {
+        "user_id": req.user_id,
+        "new_device_id": req.new_device_id,
+        "new_device_signing_pub": req.new_device_signing_pub,
+        "new_device_encryption_pub": req.new_device_encryption_pub,
+    }
+    payload_bytes = json.dumps(payload_dict, sort_keys=True).encode("utf-8")
+
+    if not verify_ecdsa_signature(old_signing_pub, payload_bytes, req.approval_signature):
+        conn.close()
+        raise HTTPException(status_code=401, detail="Invalid approval signature")
+
+    now = int(time.time())
+    with conn:
+        conn.execute(
+            """
+            INSERT INTO devices (
+                id, user_id, device_signing_pub, device_encryption_pub, created_at
+            )
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                req.new_device_id,
+                req.user_id,
+                req.new_device_signing_pub,
+                req.new_device_encryption_pub,
+                now,
+            ),
+        )
+    conn.close()
+
+    return {"status": "ok", "device_id": req.new_device_id}
+

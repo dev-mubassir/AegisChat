@@ -38,9 +38,10 @@
   Do: log redaction (no bodies, no tokens); security headers; CORS closed; request size limit. Test: send messages through the relay with a plaintext marker, then scan the SQLite file and the captured logs. The marker must not appear.
   Check: S passes.
   Evidence: `cd server && python -m pytest -q` passed (22 passed in 3.13s: log redaction, security headers, closed CORS, request size limit, zero plaintext/tokens in DB/logs).
-- [ ] T07 TOTP, recovery codes, new-device approval
+- [x] T07 TOTP, recovery codes, new-device approval
   Do: `pyotp` TOTP enrolment and check; 10 single-use recovery codes stored hashed (Argon2id); new-device approval = the old device signs the new device's key (QR payload) and a TOTP code is required.
   Check: S passes, with tests for wrong code, reused recovery code and approval from an unknown device.
+  Evidence: `cd server && python -m pytest -q` passed (27 passed in 9.08s: TOTP enrol/check, wrong code rejection, single-use recovery code reuse prevention, new-device approval, unknown device rejection).
 
 ## App crypto
 

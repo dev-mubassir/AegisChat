@@ -13,17 +13,18 @@
 - CLI Invite: `python server/manage.py create-invite`
 
 ## Decisions
-- Server privacy middleware enforces: max 1MB request size, strict security headers (CSP, HSTS, XFO, nosniff, referrer-policy, permissions-policy).
-- Logs are strictly redacted: only method, path, status, and latency are logged; bodies and tokens never appear.
-- Verified zero-plaintext in SQLite and server logs.
+- TOTP enrolment using pyotp with 10 single-use recovery codes hashed with Argon2id.
+- New-device approval: old device verifies TOTP and signs new device public keys.
+- Unknown devices and wrong TOTP/recovery codes are rejected.
 
 ## What Is Next
-- T07: TOTP, recovery codes, new-device approval (pyotp, Argon2id, QR payload approval).
+- T08: App crypto - AES-256-GCM (app/lib/crypto/aes_gcm.dart, 96-bit nonce, associated data, 10k nonce uniqueness).
 
 ## Attempt Log
 - T01: PASS. Server skeleton and pytest/ruff config.
 - T02: PASS. Flutter skeleton with pinned dependencies.
 - T03: PASS. SQLite tables, create-invite, POST /register.
-- T04: PASS. Challenge login, signature verify, token rotation & revocation, rate limits.
+- T04: PASS. Challenge login, signature verify, token rotation, rate limits.
 - T05: PASS. Key directory, WebSocket relay, delete-on-ack, offline delivery, 30-day purge.
 - T06: PASS. Server privacy: log redaction, security headers, closed CORS, 1MB size limit.
+- T07: PASS. TOTP enrolment, Argon2id recovery codes, new-device approval flow.
