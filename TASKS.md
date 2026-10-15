@@ -83,9 +83,10 @@
 
 ## Chat
 
-- [ ] T16 Encrypted local storage
+- [x] T16 Encrypted local storage
   Do: store messages encrypted at rest: SQLCipher if it works under `flutter test`, otherwise per-record AES-256-GCM with a key from `KeyStore`.
   Check: A passes, including a test that the file on disk has no plaintext marker and a wrong key cannot read it.
+  Evidence: `flutter analyze` clean (0 issues) and `flutter test` passed (47 tests passed: per-record AES-256-GCM, zero plaintext markers on disk, wrong key rejection, bit-tampering detection).
 - [ ] T17 Contacts and verification
   Do: add a contact by scanning a QR (user id + public keys + invite), show the safety number, a "verified" flag, and a warning when a contact's key changes.
   Check: A passes.

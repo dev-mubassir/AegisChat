@@ -22,8 +22,10 @@
 - DeviceKey interface: HardwareDeviceKey compile-checked with MethodChannel, SoftwareDeviceKey for tests only (throws if used in release mode). Manual checks documented in MANUAL_CHECKS.md.
 - TOTP & Approval: TotpService with canonical payload signing matching Python server, TotpEnrollmentScreen & DeviceApprovalScreen.
 
+- Encrypted Local Storage: EncryptedMessageStore with per-record AES-256-GCM, zero plaintext markers on disk, KeyStore key management.
+
 ## What Is Next
-- T16: Encrypted local storage (AES-256-GCM record-level encryption with KeyStore, no plaintext on disk).
+- T17: Contacts and verification (QR scan, safety number display, verified flag, key change detection).
 
 ## Attempt Log
 - T01..T07: PASS (Server skeleton, Flutter skeleton, DB, Auth, Relay, Privacy, TOTP/Approval).
@@ -31,3 +33,4 @@
 - T13: PASS. DeviceKey abstraction, SoftwareDeviceKey, LoginClient challenge/response, refresh rotation.
 - T14: PASS. AppLockManager with Argon2id PIN, biometrics, delays, 10-failure wipe, 60s auto-lock.
 - T15: PASS. TOTP enrolment, recovery codes, new-device approval QR and widget tests.
+- T16: PASS. EncryptedMessageStore with per-record AES-256-GCM, zero plaintext on disk, wrong key rejection.
