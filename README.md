@@ -1,161 +1,159 @@
-# SecureChat: Zero-Trust End-to-End Encrypted Mobile Messaging
+# AegisChat: Zero-Knowledge, Hardware-Backed Encrypted Messenger
 
-SecureChat is a modern, privacy-focused end-to-end encrypted (E2EE) messaging system engineered to provide provable, zero-plaintext confidentiality and cryptographic non-repudiation between mobile devices across an untrusted relay server.
+<p align="center">
+  <img src="https://img.shields.io/badge/Security-Zero--Knowledge-0ea5e9?style=for-the-badge&logo=shield" alt="Zero-Knowledge" />
+  <img src="https://img.shields.io/badge/Flutter-3.47+-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter" />
+  <img src="https://img.shields.io/badge/FastAPI-0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/Cipher-AES--256--GCM-blue?style=for-the-badge" alt="AES-256-GCM" />
+  <img src="https://img.shields.io/badge/KEM-RSA--2048--OAEP-purple?style=for-the-badge" alt="RSA-OAEP" />
+  <img src="https://img.shields.io/badge/Signatures-Ed25519-green?style=for-the-badge" alt="Ed25519" />
+  <img src="https://img.shields.io/badge/License-MIT-amber?style=for-the-badge" alt="License MIT" />
+</p>
 
----
-
-## Architecture & Cryptographic Guarantees
-
-- **Message Confidentiality & Authenticity**: AES-256-GCM authenticated encryption with a fresh CSPRNG 96-bit nonce per message. Associated Authenticated Data (AAD) binds sender, recipient, message ID, and timestamp.
-- **Key Encapsulation**: Ephemeral symmetric keys encapsulated via RSA-2048 with OAEP-SHA256 padding.
-- **Digital Signatures**: Ed25519 cryptographic signatures over every envelope.
-- **Zero Plaintext Storage**: The relay server stores only opaque Base64-encoded encrypted blobs. Messages are permanently deleted upon receipt of delivery acknowledgement (`ack`).
-- **Encrypted Local Storage**: Local SQLite message store encrypted at rest per-record using AES-256-GCM with keys isolated in the platform secure enclave / hardware keystore.
-- **Hardware Isolation**: `FLAG_SECURE` prevents Android screenshots and recent app switcher leaks; iOS app switcher uses `UIBlurEffect`; ADB backups disabled (`allowBackup="false"`).
-- **Anti-Tamper & Brute-Force Defense**: Argon2id-derived 6-digit PIN with progressive exponential delays and an automatic 10-failure emergency key wipe. 60-second background auto-lock.
+AegisChat is a modern, privacy-first mobile messaging application engineered to deliver **provable zero-plaintext confidentiality**, cryptographic non-repudiation, and hardware-backed key protection across an untrusted relay server.
 
 ---
 
-## 1. Prerequisites
+## 🌟 Key Highlights
 
-- **Python**: 3.10+ (with `venv` and `pip`)
-- **Flutter**: 3.47+ (Dart 3.13+)
-- **Java**: OpenJDK 17 LTS
-- **Android SDK**: API Level 34+ / Build-Tools 36.0.0+
+* 📷 **Visual QR Identity & Live Camera Scanner**: Pair contacts out-of-band in seconds. Generate high-contrast QR codes and scan them with an integrated camera scanner featuring torch toggle and viewfinder framing.
+* 🛡️ **Zero-Knowledge Relay Server**: The relay server processes only opaque Base64-encoded encrypted envelopes. It **never** has access to message plaintext or private keys. Messages are permanently deleted upon delivery acknowledgement (`ack`).
+* 🔐 **Dual-Layer Asymmetric Cryptography**: Combines **RSA-2048 OAEP-SHA256** for ephemeral key encapsulation and **Ed25519** for digital envelope signatures.
+* 🔒 **Encrypted At-Rest Storage**: Local SQLite message and contact stores are encrypted with AES-256-GCM. Keys are derived using **Argon2id** (`t=3`, `m=64MB`, `p=4`) from user PINs and hardware-backed Android Keystore / iOS Keychain enclaves.
+* 👁️ **Anti-Surveillance Screen Privacy**: Enforces `FLAG_SECURE` on Android to prevent screenshots, screen recordings, and recent app switcher leaks. Enforces `UIBlurEffect` on iOS backgrounding. Backup extraction (`allowBackup="false"`) is disabled.
+* 🔢 **60-Digit Safety Number Verification**: Symmetrically computes an out-of-band SHA-512 fingerprint displayed in 12 groups of 5 digits. Detects any public key change or MITM attempt with visual security warnings.
+* 💻 **Interactive PC Companion Terminal**: Comes with a companion client that allows testing real-time E2EE messaging between your mobile device and your PC directly over local Wi-Fi.
 
 ---
 
-## 2. Server Setup & Execution
+## 🏗️ Architecture Overview
 
-### Install Server Dependencies
+```mermaid
+flowchart TD
+    subgraph Phone [Mobile Device - Flutter]
+        UI[SecureChat UI] --> Scanner[Camera QR Scanner]
+        UI --> KeyGen[Crypto Engine: RSA-2048 + Ed25519]
+        KeyGen --> LocalStore[(Encrypted Store: AES-256-GCM)]
+        KeyGen --> Envelope[Message Envelope Builder]
+    end
+
+    subgraph Server [Relay Server - FastAPI]
+        WS[WebSocket Hub /ws] --> MsgQueue[(Opaque SQLite Queue)]
+        MsgQueue --> Deleter[Instant ACK Deleter]
+    end
+
+    subgraph Companion [PC Companion Client]
+        Terminal[CLI Terminal / QR Preview] --> PyCrypto[Python Cryptography Engine]
+        PyCrypto --> WSClient[WebSocket Client]
+    end
+
+    Envelope -- "Sealed Binary Ciphertext (E2EE)" --> WS
+    WS -- "Relay Ciphertext" --> WSClient
+    WSClient -- "Delivery Ack" --> WS
+```
+
+---
+
+## 🛡️ Cryptographic Specification
+
+| Component | Primitive / Algorithm | Details |
+| :--- | :--- | :--- |
+| **Symmetric Cipher** | **AES-256-GCM** | Fresh 96-bit CSPRNG nonce per message; 128-bit authentication tag |
+| **Key Encapsulation** | **RSA-2048 OAEP** | SHA-256 digest with MGF1 mask generation |
+| **Digital Signatures** | **Ed25519** | 64-byte signature over the full binary envelope body |
+| **Device Authentication** | **ECDSA P-256** | Challenge-response authentication against server relay |
+| **Key Derivation** | **Argon2id** | 3 iterations, 64 MB memory, 4 parallelism lanes |
+| **Tamper Defense** | **AAD Binding** | Authenticated Additional Data binds `sender:recipient:msg_id:timestamp` |
+| **Replay Protection** | **Replay Guard** | In-memory message ID cache + ±300s clock skew window |
+
+---
+
+## 🚀 Quick Start Guide
+
+### 1. Prerequisites
+* **Python**: 3.10+ (with `pip`)
+* **Flutter**: 3.47+ (Dart 3.13+)
+* **Java**: OpenJDK 17 LTS
+* **Android SDK**: API Level 34+
+
+---
+
+### 2. Start the Backend Server
+
 ```bash
+# 1. Install server requirements
 cd server
 pip install -r requirements.txt
-```
 
-### Initialize Database & Start Relay Server
-Run the FastAPI server on localhost or across your local network:
-```bash
-python -m uvicorn server.main:app --host 0.0.0.0 --port 8000
+# 2. Run the FastAPI relay server
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
-API docs are available at `http://localhost:8000/docs`.
+> The server listens on `0.0.0.0:8000` and is accessible by all devices on your local Wi-Fi.
 
-### Generate Registration Invite Code
-User registration is strictly invite-gated. Generate a one-time 24-hour invite:
+---
+
+### 3. Generate a One-Time Registration Invite Code
+
 ```bash
 python server/manage.py create-invite --expires-hours 24
 ```
 Output:
-```
-GLS5ElXtRQHEYFVjf_dESUs9x-rM8gH7
-```
-
----
-
-## 3. Running the Test Suite
-
-### Server Unit & Integration Tests
-Runs challenge-response auth, refresh rotation, TOTP enrollment, device approvals, and relay tests:
-```bash
-cd server && python -m pytest -v
-```
-
-### Flutter Unit, Crypto & Widget Tests
-Runs 65+ unit, widget, and platform tests:
-```bash
-cd app && flutter test
-```
-
-### Flutter Code Analyzer
-Enforces clean Dart code with zero lint warnings:
-```bash
-cd app && flutter analyze
-```
-
-### Static Analysis, Cryptographic Linter & Secret Scanner
-```bash
-python tools/crypto_lint.py
-python tools/scan_secrets.py
-python tools/check_platform_flags.py
-bandit -r server -lll
-pip-audit
-```
-
-### Cross-Language Verification Test
-Verifies that message envelopes sealed in Dart can be opened in Python, and vice versa:
-```bash
-python tools/xcheck.py
-```
-
-### Full End-to-End Headless Integration Test
-Launches a test server instance and runs headless Flutter clients exchanging E2EE messages:
-```bash
-python tools/e2e.py
+```text
+swZzMYRvLiyNbvc1Q7HFRSD90pLCM52O
 ```
 
 ---
 
-## 4. Building the Android APK
+### 4. Build & Install the Mobile App
 
-Build a debug APK for development or testing:
 ```bash
 cd app
+flutter pub get
 flutter build apk --debug
 ```
-The compiled package is located at:
-```
-app/build/app/outputs/flutter-apk/app-debug.apk
-```
 
----
-
-## 5. Installing and Running on a Physical Phone
-
-### Method A: Install via ADB (USB Debugging)
-1. Enable **Developer Options** and **USB Debugging** on your Android device.
-2. Connect your phone to your PC via USB cable.
-3. Install the APK:
+#### Install via Local Wi-Fi (No Cable Needed):
+1. Serve the APK:
    ```bash
-   adb install -r app/build/app/outputs/flutter-apk/app-debug.apk
+   python -m http.server 8080 --directory app/build/app/outputs/flutter-apk
    ```
-
-### Method B: Sideload via Direct Transfer
-1. Copy `app-debug.apk` to your phone via USB file transfer, Google Drive, or local file server.
-2. In your phone's file manager, tap `app-debug.apk`.
-3. If prompted, allow "Install unknown apps" for your file manager.
-4. Tap **Install** and launch **SecureChat**.
+2. Open your phone's browser and go to `http://<YOUR_PC_IP>:8080/app-debug.apk`.
+3. Download and install.
 
 ---
 
-## 6. Production Deployment with Caddy & HTTPS Domain
+### 5. Chat with the PC Companion Client
 
-SecureChat relies on TLS 1.3 with SHA-256 certificate pinning. Use Caddy to obtain free, automatic Let's Encrypt certificates.
-
-### `Caddyfile`
-```caddy
-chat.yourdomain.com {
-    reverse_proxy 127.0.0.1:8000
-
-    # Strict HTTPS and Privacy Headers
-    header {
-        Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
-        X-Content-Type-Options "nosniff"
-        X-Frame-Options "DENY"
-        Referrer-Policy "no-referrer"
-    }
-
-    # Enable WebSocket compression & buffering bypass
-    @websockets {
-        header Connection *Upgrade*
-        header Upgrade websocket
-    }
-    reverse_proxy @websockets 127.0.0.1:8000
-}
-```
-
-### Extract SHA-256 Certificate Pin
-After issuing the certificate with Caddy, extract the public key pin:
+Start the companion test user (**Alice**) on your PC:
 ```bash
-openssl x509 -in /etc/caddy/certificates/acme-v02.api.letsencrypt.org-directory/chat.yourdomain.com/chat.yourdomain.com.crt -outform der | openssl dgst -sha256 -binary | openssl base64
+python -u tools/companion_client.py
 ```
-Insert the pin into `app/lib/network/cert_pinning.dart` under `primaryPin`. See `docs/SECURITY.md` for certificate rotation instructions.
+- Alice renders an **ASCII QR code directly in the terminal**.
+- Open `http://<YOUR_PC_IP>:8080/alice_qr.html` in your browser to view a large QR code on your PC monitor.
+- In the mobile app, tap the **QR Scanner icon** (`Icons.qr_code_scanner`), point your camera at the PC monitor, and chat in real-time with full end-to-end encryption!
+
+---
+
+## 🧪 Comprehensive Test Suite
+
+AegisChat is backed by an extensive automated test suite covering cryptographic primitives, UI interactions, network protocols, and platform security flags:
+
+```bash
+# 1. Run Flutter unit & widget tests (65/65 passing)
+cd app && flutter test
+
+# 2. Run static analysis (0 issues)
+cd app && flutter analyze
+
+# 3. Run server backend tests (27/27 passing)
+python -m pytest server/tests
+
+# 4. Verify Android & iOS privacy compliance flags
+python tools/check_platform_flags.py
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).

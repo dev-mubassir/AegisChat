@@ -11,6 +11,8 @@
 *.db3
 *.sqlite
 *.sqlite3
+companion_keys/
+tools/companion_keys/
 
 # Python
 __pycache__/
