@@ -265,4 +265,18 @@ class AppLockManager {
     }
     return false;
   }
+
+  /// Alias for authenticateBiometric
+  Future<bool> authenticateWithBiometrics({String reason = 'Unlock SecureChat'}) =>
+      authenticateBiometric(reason: reason);
+
+  /// Returns remaining seconds of lockout if currently in cooldown, or 0.
+  Future<int> getLockoutRemainingSeconds() async {
+    final lockoutStr = await _keyStore.read(keyLockoutUntil);
+    if (lockoutStr == null) return 0;
+    final lockoutUntilEpoch = int.tryParse(lockoutStr) ?? 0;
+    final nowEpoch = _clock().millisecondsSinceEpoch ~/ 1000;
+    final remaining = lockoutUntilEpoch - nowEpoch;
+    return remaining > 0 ? remaining : 0;
+  }
 }

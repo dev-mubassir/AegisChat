@@ -32,12 +32,20 @@ class ChatService {
   ChatConnectionState get connectionState => _connectionState;
 
   final List<Map<String, dynamic>> _offlineQueue = [];
-  final StreamController<ChatMessage> _incomingController = StreamController<ChatMessage>.broadcast();
+  final StreamController<ChatMessage> _incomingController = StreamController<ChatMessage>.broadcast(sync: true);
   final StreamController<ChatConnectionState> _stateController =
-      StreamController<ChatConnectionState>.broadcast();
+      StreamController<ChatConnectionState>.broadcast(sync: true);
 
   Stream<ChatMessage> get incomingMessages => _incomingController.stream;
+  Stream<ChatMessage> get messageStream => _incomingController.stream;
   Stream<ChatConnectionState> get connectionStateStream => _stateController.stream;
+
+  /// Dispatches an incoming ChatMessage directly to listeners.
+  void dispatchIncomingMessage(ChatMessage message) {
+    if (!_incomingController.isClosed) {
+      _incomingController.add(message);
+    }
+  }
 
   // Contact key resolvers for incoming message verification
   final Future<Uint8List?> Function(String senderId) getSenderSigningPublicKey;

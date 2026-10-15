@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:app/crypto/safety_number.dart';
+import 'package:pointycastle/export.dart';
 
 class KeyChangedException implements Exception {
   final String userId;
@@ -16,6 +17,7 @@ class Contact {
   final String displayName;
   final String signingPublicKeyHex;
   final String encryptionPublicKeyPem;
+  final RSAPublicKey? rsaPublicKey;
   bool isVerified;
   String? previousKeyHex;
   bool hasKeyChanged;
@@ -25,10 +27,13 @@ class Contact {
     required this.displayName,
     required this.signingPublicKeyHex,
     required this.encryptionPublicKeyPem,
+    this.rsaPublicKey,
     this.isVerified = false,
     this.previousKeyHex,
     this.hasKeyChanged = false,
   });
+
+  Uint8List get signingKeyBytes => ContactManager.hexToBytes(signingPublicKeyHex);
 
   Map<String, dynamic> toJson() => {
         'user_id': userId,
@@ -95,12 +100,18 @@ class ContactManager {
 
   ContactManager({this.file});
 
-  Uint8List _hexToBytes(String hex) {
+  static Uint8List hexToBytes(String hex) {
     final result = Uint8List(hex.length ~/ 2);
     for (var i = 0; i < result.length; i++) {
       result[i] = int.parse(hex.substring(i * 2, i * 2 + 2), radix: 16);
     }
     return result;
+  }
+
+  /// Adds a Contact directly to memory/disk.
+  Future<void> addContact(Contact contact) async {
+    _contacts[contact.userId] = contact;
+    await _save();
   }
 
   /// Loads contacts from disk.
@@ -211,7 +222,7 @@ class ContactManager {
       throw StateError('Contact $userId not found');
     }
 
-    final contactKeyBytes = _hexToBytes(contact.signingPublicKeyHex);
+    final contactKeyBytes = hexToBytes(contact.signingPublicKeyHex);
     return SafetyNumber.compute(localSigningKeyBytes, contactKeyBytes);
   }
 }

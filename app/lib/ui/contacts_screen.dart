@@ -7,11 +7,13 @@ import 'package:flutter/material.dart';
 class ContactsScreen extends StatefulWidget {
   final ContactManager contactManager;
   final Uint8List localSigningKeyBytes;
+  final void Function(Contact contact)? onContactSelected;
 
   const ContactsScreen({
     super.key,
     required this.contactManager,
     required this.localSigningKeyBytes,
+    this.onContactSelected,
   });
 
   @override
@@ -238,7 +240,13 @@ class _ContactsScreenState extends State<ContactsScreen> {
                     icon: const Icon(Icons.security),
                     onPressed: () => _showSafetyNumberDialog(c),
                   ),
-                  onTap: () => _showSafetyNumberDialog(c),
+                  onTap: () {
+                    if (widget.onContactSelected != null) {
+                      widget.onContactSelected!(c);
+                    } else {
+                      _showSafetyNumberDialog(c);
+                    }
+                  },
                 );
               },
             ),

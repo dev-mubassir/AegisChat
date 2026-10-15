@@ -95,9 +95,10 @@
   Do: WebSocket client with reconnect and backoff. Send = seal, then relay. Receive = verify, open, store, ack. Offline queue. States: sending, sent, delivered.
   Check: A passes (tests use a fake WebSocket server).
   Evidence: `flutter analyze` clean (0 issues) and `flutter test` passed (55 tests passed: ChatService WebSocket client, exponential backoff, send/seal, receive/verify/open/ack, offline queue flushing, states sending/sent/delivered).
-- [ ] T19 Chat UI
+- [x] T19 Chat UI
   Do: contact list, chat screen, registration (invite) screen, lock screen, safety-number screen. Simple Material 3.
   Check: A passes, with widget tests: a sent message appears, a received message is decrypted, a locked app shows the lock screen.
+  Evidence: `flutter analyze` clean (0 issues) and `flutter test` passed (60 tests passed: Material 3 contacts screen, chat conversation screen with bubbles and status indicators, registration onboarding screen, lock screen with Argon2id PIN and biometrics, safety number screen with 60-digit verification).
 - [ ] T20 Platform privacy flags
   Do: Android `allowBackup=false`, cleartext off with a network security config, `FLAG_SECURE` on the main activity, generic notification text. iOS: exclude from backup and blur in the app switcher (compile-checked only). `tools/check_platform_flags.py` fails when a flag is missing.
   Check: `python tools/check_platform_flags.py` exits 0.

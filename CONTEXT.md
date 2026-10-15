@@ -25,7 +25,7 @@
 - Contacts & Verification: ContactManager with QR contact cards, 60-digit symmetric safety numbers, verified badges, and automatic key change detection/warnings.
 
 ## What Is Next
-- T19: Chat UI (contact list, chat screen, registration/invite screen, lock screen, safety-number screen, Material 3, widget tests).
+- T20: Platform privacy flags (Android allowBackup=false, network security config, FLAG_SECURE on MainActivity, generic notification text; tools/check_platform_flags.py).
 
 ## Attempt Log
 - T01..T07: PASS (Server skeleton, Flutter skeleton, DB, Auth, Relay, Privacy, TOTP/Approval).
@@ -36,3 +36,4 @@
 - T16: PASS. EncryptedMessageStore with per-record AES-256-GCM, zero plaintext on disk, wrong key rejection.
 - T17: PASS. ContactManager, safety numbers, verified flag, key change alert UI and tests.
 - T18: PASS. ChatService WebSocket client, reconnect/backoff, send/seal, receive/open/ack, offline queue.
+- T19: PASS. Chat UI (Material 3 contacts screen, chat conversation screen, registration/invite screen, lock screen with PIN/biometrics, safety number screen, widget tests).
