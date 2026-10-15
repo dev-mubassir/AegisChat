@@ -8,18 +8,32 @@ class RegistrationScreen extends StatefulWidget {
     required String username,
     required String deviceName,
     required String pin,
-  }) onRegister;
+  })? onRegister;
+
+  final Future<void> Function({
+    required String inviteCode,
+    required String username,
+    required String deviceName,
+    required String pin,
+    required String serverUrl,
+  })? onRegisterWithServer;
+
+  final String initialServerUrl;
 
   const RegistrationScreen({
     super.key,
-    required this.onRegister,
-  });
+    this.onRegister,
+    this.onRegisterWithServer,
+    this.initialServerUrl = 'http://192.168.29.122:8000',
+  }) : assert(onRegister != null || onRegisterWithServer != null);
 
   @override
   State<RegistrationScreen> createState() => _RegistrationScreenState();
 }
 
 class _RegistrationScreenState extends State<RegistrationScreen> {
+  late final TextEditingController _serverController =
+      TextEditingController(text: widget.initialServerUrl);
   final TextEditingController _inviteController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _deviceController = TextEditingController(text: 'My Phone');
@@ -30,6 +44,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   @override
   void dispose() {
+    _serverController.dispose();
     _inviteController.dispose();
     _usernameController.dispose();
     _deviceController.dispose();
@@ -38,10 +53,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
 
   Future<void> _submit() async {
+    final server = _serverController.text.trim();
     final invite = _inviteController.text.trim();
     final username = _usernameController.text.trim();
     final device = _deviceController.text.trim();
     final pin = _pinController.text.trim();
+
+    if (server.isEmpty) {
+      setState(() => _errorMessage = 'Please enter server relay URL');
+      return;
+    }
 
     if (invite.isEmpty) {
       setState(() => _errorMessage = 'Please enter an invite code');
@@ -66,12 +87,22 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     });
 
     try {
-      await widget.onRegister(
-        inviteCode: invite,
-        username: username,
-        deviceName: device,
-        pin: pin,
-      );
+      if (widget.onRegisterWithServer != null) {
+        await widget.onRegisterWithServer!(
+          inviteCode: invite,
+          username: username,
+          deviceName: device,
+          pin: pin,
+          serverUrl: server,
+        );
+      } else {
+        await widget.onRegister!(
+          inviteCode: invite,
+          username: username,
+          deviceName: device,
+          pin: pin,
+        );
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -113,6 +144,17 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 ),
               ),
               const SizedBox(height: 24),
+              TextField(
+                key: const Key('server_url_input'),
+                controller: _serverController,
+                decoration: const InputDecoration(
+                  labelText: 'Server Relay URL',
+                  hintText: 'http://192.168.29.122:8000',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.dns),
+                ),
+              ),
+              const SizedBox(height: 16),
               TextField(
                 key: const Key('invite_code_input'),
                 controller: _inviteController,
