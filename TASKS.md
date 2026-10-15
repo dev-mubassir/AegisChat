@@ -15,9 +15,10 @@
   Do: `git init`; `.gitignore` (keys, `.env`, `*.jks`, `*.keystore`, `.venv`, `build/`, `logs/`); `CONTEXT.md`; `server/` FastAPI app with `/health`; pinned `requirements.txt`; pytest and ruff config.
   Check: S passes and `python -m ruff check server` is clean.
   Evidence: `cd server && python -m pytest -q` passed (1 passed in 0.69s); `python -m ruff check server` passed (All checks passed!).
-- [ ] T02 Flutter skeleton
+- [x] T02 Flutter skeleton
   Do: `flutter create app --platforms android,ios`; add `cryptography`, `pointycastle`, `flutter_secure_storage`, `local_auth`, `web_socket_channel`, `http` and a QR show/scan package; pin versions.
   Check: A passes. Note `flutter --version` in `CONTEXT.md`. Flutter missing: BLOCKED.
+  Evidence: `cd app && flutter analyze && flutter test` passed (flutter analyze: No issues found!; flutter test: All tests passed!).
 
 ## Server
 
