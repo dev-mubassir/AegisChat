@@ -49,9 +49,10 @@
   Do: `app/lib/crypto/aes_gcm.dart`: encrypt and decrypt with a random 96-bit nonce and associated data.
   Check: `cd app && flutter test test/crypto` passes, with known-answer vectors, a flip-any-bit tamper test, wrong key or associated data fails, and 10,000 nonces all unique.
   Evidence: `cd app && flutter test test/crypto` passed (6 passed: roundtrip, KAT vectors, flip-any-bit tamper, wrong key/aad rejection, 10,000 nonces all unique).
-- [ ] T09 RSA-OAEP and signatures
+- [x] T09 RSA-OAEP and signatures
   Do: RSA-2048 key generation (run it in a background isolate: pure-Dart RSA key generation can take many seconds), OAEP-SHA256 wrap and unwrap of a 32-byte key, Ed25519 (or RSA-PSS) sign and verify.
   Check: `cd app && flutter test test/crypto` passes, with tests for round trip, wrong key, two wraps of one key differ, and tampered signature.
+  Evidence: `cd app && flutter test test/crypto` passed (13 passed: isolate keygen, OAEP-SHA256 wrap/unwrap, probabilistic padding, wrong key rejection, Ed25519 sign/verify, tampered sig/msg rejection).
 - [ ] T10 Message envelope
   Do: `seal()` and `open()` combine T08 and T09. Versioned format written in `docs/PROTOCOL.md`. Associated data = sender id + recipient id + message id + timestamp. Replay guard by message id. Reject a wrong recipient and timestamps outside the allowed clock skew.
   Check: same command, with tests for round trip, tampering with any field, replay and wrong recipient.
