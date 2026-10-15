@@ -20,9 +20,10 @@
 - Documented in `docs/PROTOCOL.md`.
 - Verified bidirectional compatibility between Dart PointyCastle/cryptography and Python cryptography.
 - DeviceKey interface: HardwareDeviceKey compile-checked with MethodChannel, SoftwareDeviceKey for tests only (throws if used in release mode). Manual checks documented in MANUAL_CHECKS.md.
+- App lock: Argon2id 6-digit PIN derivation, 5s-300s progressive lockout delays, 10-failure automatic key wiping, and 60s background auto-lock.
 
 ## What Is Next
-- T14: App lock (biometrics with local_auth + 6-digit PIN Argon2id, progressive delay, 10-try wipe, 60s background auto-lock).
+- T15: TOTP, recovery and new-device screens (TOTP enrolment, single-use recovery codes, new-device approval QR).
 
 ## Attempt Log
 - T01..T07: PASS (Server skeleton, Flutter skeleton, DB, Auth, Relay, Privacy, TOTP/Approval).
@@ -32,3 +33,4 @@
 - T11: PASS. KeyStore abstraction & in-memory fake, 60-digit symmetric safety number, QR verification payload.
 - T12: PASS. Bidirectional cross-language crypto checks (Dart <-> Python reference implementation).
 - T13: PASS. DeviceKey abstraction, SoftwareDeviceKey ECDSA P-256, LoginClient challenge/response, refresh rotation.
+- T14: PASS. AppLockManager with Argon2id PIN, biometrics, delays, 10-failure wipe, 60s background auto-lock.
