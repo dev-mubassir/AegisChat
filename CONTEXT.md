@@ -25,7 +25,7 @@
 - Contacts & Verification: ContactManager with QR contact cards, 60-digit symmetric safety numbers, verified badges, and automatic key change detection/warnings.
 
 ## What Is Next
-- T20: Platform privacy flags (Android allowBackup=false, network security config, FLAG_SECURE on MainActivity, generic notification text; tools/check_platform_flags.py).
+- T21: Certificate pinning (SHA-256 public key pinning with primary + backup pin, config, unit tests, docs/SECURITY.md rotation guide).
 
 ## Attempt Log
 - T01..T07: PASS (Server skeleton, Flutter skeleton, DB, Auth, Relay, Privacy, TOTP/Approval).
@@ -37,3 +37,4 @@
 - T17: PASS. ContactManager, safety numbers, verified flag, key change alert UI and tests.
 - T18: PASS. ChatService WebSocket client, reconnect/backoff, send/seal, receive/open/ack, offline queue.
 - T19: PASS. Chat UI (Material 3 contacts screen, chat conversation screen, registration/invite screen, lock screen with PIN/biometrics, safety number screen, widget tests).
+- T20: PASS. Platform privacy flags (Android allowBackup=false, cleartext off, FLAG_SECURE, iOS backup exclusion, app switcher UIBlurEffect, generic notification text, check_platform_flags.py).
