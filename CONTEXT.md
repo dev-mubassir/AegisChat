@@ -25,7 +25,7 @@
 - Contacts & Verification: ContactManager with QR contact cards, 60-digit symmetric safety numbers, verified badges, and automatic key change detection/warnings.
 
 ## What Is Next
-- T22: Scanners (tools/crypto_lint.py, tools/scan_secrets.py with self-tests, bandit, pip-audit).
+- T23: End-to-end test (tools/e2e.py headless server + client test in app/test_e2e/ verifying registration, login, message exchange, zero plaintext in server db/logs).
 
 ## Attempt Log
 - T01..T07: PASS (Server skeleton, Flutter skeleton, DB, Auth, Relay, Privacy, TOTP/Approval).
@@ -39,3 +39,4 @@
 - T19: PASS. Chat UI (Material 3 contacts screen, chat conversation screen, registration/invite screen, lock screen with PIN/biometrics, safety number screen, widget tests).
 - T20: PASS. Platform privacy flags (Android allowBackup=false, cleartext off, FLAG_SECURE, iOS backup exclusion, app switcher UIBlurEffect, generic notification text, check_platform_flags.py).
 - T21: PASS. Certificate pinning (CertificatePinner primary/backup pin, DER SHA-256 matching, rotation guide in docs/SECURITY.md).
+- T22: PASS. Scanners (tools/crypto_lint.py, tools/scan_secrets.py with self-tests, bandit, pip-audit).

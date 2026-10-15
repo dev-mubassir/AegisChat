@@ -110,9 +110,10 @@
 
 ## Checks and build
 
-- [ ] T22 Scanners
+- [x] T22 Scanners
   Do: `tools/crypto_lint.py` fails on ECB, CBC, PKCS#1 v1.5, MD5/SHA-1 for security, non-secure `Random(`, hard-coded keys or IVs, printed keys or tokens, and SharedPreferences used for keys. `tools/scan_secrets.py` fails on private-key blocks, tokens and a committed `.env`. Both have self-tests with bad samples. Also run `bandit -r server` and `pip-audit`.
   Check: both scripts exit 0 on the repo and non-zero on their bad samples.
+  Evidence: `python tools/crypto_lint.py` and `python tools/scan_secrets.py` both exited 0 on repo and detected bad samples in self-tests; `bandit -r server -lll` clean (0 Medium/High issues); `pip-audit` clean (0 known vulnerabilities).
 - [ ] T23 End-to-end test
   Do: `tools/e2e.py` starts the server on a free port with a temporary database, runs a headless Dart test (`app/test_e2e/`) where two clients register with invites, log in and exchange messages through the real server, then checks that the server database and logs hold no plaintext.
   Check: `python tools/e2e.py` exits 0.
