@@ -4,7 +4,7 @@
 
 SecureChat is designed for zero-trust, confidential end-to-end encrypted messaging between authenticated mobile clients via an untrusted relay server.
 
-### Core Cryptographic Invariants
+### Core Cryptographic Invariants 
 - **Message Confidentiality & Authenticity**: AES-256-GCM authenticated encryption. Each message uses a fresh 96-bit CSPRNG nonce (`Random.secure()`). Associated data (AAD) binds `sender_id`, `recipient_id`, `message_id`, and Unix timestamp. Tampering with any byte or metadata immediately fails GCM authentication tag verification.
 - **Key Encapsulation**: Ephemeral 256-bit AES symmetric keys are wrapped using RSA-2048 with OAEP padding and SHA-256 (`RSAEngine` + `OAEPEncoding.withCustomDigest(() => SHA256Digest())`).
 - **Cryptographic Signatures & Non-Repudiation**: Ed25519 digital signatures. The entire message envelope (version, IDs, timestamp, wrapped key, ciphertext) is signed by the sender's private signing key and verified before decryption.
